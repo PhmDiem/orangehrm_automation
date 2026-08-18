@@ -4,7 +4,6 @@ from pages.base_page import BasePage
 class DashboardPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
-        self.driver=driver
 
         self.upgrade_btn= (By.XPATH, '//button[@class="oxd-glass-button orangehrm-upgrade-button"]')
         self.admin_btn= (By.XPATH, '//a[@href="/web/index.php/admin/viewAdminModule"]')

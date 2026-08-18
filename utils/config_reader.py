@@ -65,6 +65,10 @@ class ConfigReader:
     @staticmethod
     def get_explicit_wait():
         return ConfigReader.get_timeout("explicit_wait")
+
+    @staticmethod
+    def get_dropdown_pause():
+        return float(ConfigReader.get_timeout("dropdown_pause"))
     
     @staticmethod
     def get_user(user_type):
@@ -75,13 +79,12 @@ class ConfigReader:
         return user
     
     @staticmethod
-    def get_username():
-        return ConfigReader.get_user("users").get("username")
-    
-    @staticmethod
-    def get_password():
-        return ConfigReader.get_user("users").get("password")
+    def get_username(user_type="admin"):
+        return ConfigReader.get_user(user_type).get("username")
 
+    @staticmethod
+    def get_password(user_type="admin"):
+        return ConfigReader.get_user(user_type).get("password")
     # --- Tiện ích quản lý cache ---
 
     @staticmethod

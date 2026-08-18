@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","13812","Create user without username","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
+"","25734","Create user with duplicate username","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
+"","5100","View list of users","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
+"","25073","Create a new ESS user","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""

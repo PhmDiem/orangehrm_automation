@@ -1,3 +1,5 @@
+from time import sleep
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from utils.config_reader import ConfigReader
@@ -6,6 +8,7 @@ class BasePage:
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(self.driver, ConfigReader.get_explicit_wait())
+        self.dropdown_pause = ConfigReader.get_dropdown_pause()
 
     def find_element(self, locator):
         try:
@@ -17,7 +20,9 @@ class BasePage:
         return self.wait.until(EC.visibility_of_all_elements_located(locator))
 
     def send_keys(self, locator, text):
-        self.find_element(locator).send_keys(text)
+        element = self.find_element(locator)
+        element.clear()
+        element.send_keys(text)
 
     def is_displayed(self, locator):
         return self.wait.until(EC.visibility_of_element_located(locator)).is_displayed()
@@ -35,5 +40,12 @@ class BasePage:
     def click(self, locator):
         self.wait.until(EC.element_to_be_clickable(locator)).click()
 
-    def wait_to_presence(self, locator):
-        return WebDriverWait(self.driver, 10).until(EC.presence_of_element_located(locator))
+    def wait_to_be_clickable(self, locator):
+        return self.wait.until(EC.element_to_be_clickable(locator))
+
+    def click_dropdown_option(self, locator):
+        sleep(self.dropdown_pause)
+        option = self.find_element(locator)
+        option.click()
+
+    

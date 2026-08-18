@@ -4,7 +4,6 @@ from pages.base_page import BasePage
 class LoginPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
-        self.driver=driver
 
         self.login_title= (By.XPATH, '//h5[@class="oxd-text oxd-text--h5 orangehrm-login-title"]')
         self.username_field= (By.NAME, 'username')

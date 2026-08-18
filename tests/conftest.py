@@ -1,7 +1,11 @@
 import pytest
+import allure
+import os
+from datetime import datetime
 from selenium import webdriver
 from tempfile import TemporaryDirectory
 from utils.config_reader import ConfigReader
+from pages.login_page import LoginPage
 
 @pytest.fixture(scope="function")
 def driver():
@@ -58,3 +62,42 @@ def driver():
             temp_profile.cleanup()
         except Exception:
             pass
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+
+    # Chỉ chụp ảnh và đính kèm vào Allure khi test bị FAIL
+    if report.when == "call" and report.failed:
+        driver = item.funcargs.get("driver")
+        if driver is not None:
+            try:
+                # Tạo thư mục lưu ảnh cục bộ
+                screenshot_dir = "screenshots"
+                os.makedirs(screenshot_dir, exist_ok=True)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                file_name = f"{item.name}_{timestamp}.png"
+                screenshot_path = os.path.join(screenshot_dir, file_name)
+
+                # Lưu ảnh xuống máy
+                driver.save_screenshot(screenshot_path)
+
+                # Đính kèm ảnh trực tiếp vào Allure Report mà không cần mở lại file
+                allure.attach(
+                    driver.get_screenshot_as_png(),
+                    name="Screenshot on Failure",
+                    attachment_type=allure.attachment_type.PNG,
+                )
+                print(f"Đã chụp và đính kèm screenshot thành công: {file_name}")
+
+            except Exception as e:
+                print(f"Không thể xử lý screenshot: {e}")
+
+@pytest.fixture
+def login(driver):
+    login_page = LoginPage(driver)
+    user = ConfigReader.get_user("admin")
+    login_page.login(user["username"], user["password"])
+    return login_page

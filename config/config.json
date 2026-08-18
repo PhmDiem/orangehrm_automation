@@ -1,9 +1,10 @@
 {
     "base_url": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
-    "isHeadless": false,
+    "isHeadless": true,
     "browser": "chrome",
     "timeout": {
         "implicit_wait": 10,
-        "explicit_wait": 30
+        "explicit_wait": 30,
+        "dropdown_pause": 5
     }
 }
