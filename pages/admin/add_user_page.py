@@ -1,4 +1,5 @@
 from selenium.webdriver.common.by import By
+
 from pages.base_page import BasePage
 
 class AddUserPage(BasePage):
@@ -8,7 +9,10 @@ class AddUserPage(BasePage):
         self.user_role= (By.XPATH, '//label[text()="User Role"]/following::div[1]')
         self.employee_name= (By.XPATH, '//p[@class="oxd-userdropdown-name"]')
         self.input_employee_name= (By.XPATH, '//input[@placeholder="Type for hints..."]')
-        self.option_employee= (By.XPATH, '//div[@class="oxd-autocomplete-option"]')
+        self.option_employee= (
+            By.XPATH,
+            '//div[@class="oxd-autocomplete-option"]/span'
+        )
         self.status= (By.XPATH, '//label[text()="Status"]/following::div[1]')
         self.username_field= (By.XPATH, '//label[text()="Username"]/following::input[1]')
         self.password_field= (By.XPATH, '//label[text()="Password"]/following::input[1]')
@@ -22,8 +26,8 @@ class AddUserPage(BasePage):
         self.click((By.XPATH, f'//div[@class="oxd-select-option"]/span[text()="{role}"]'))    
 
     def select_employee(self):
-        self.get_employee_name = self.get_text(self.employee_name)
-        self.send_keys(self.input_employee_name, self.get_employee_name)
+        employee_name = self.get_text(self.employee_name)
+        self.send_keys(self.input_employee_name, employee_name)
         self.click_dropdown_option(self.option_employee)
 
     def select_status(self, status):

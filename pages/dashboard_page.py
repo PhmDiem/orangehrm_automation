@@ -7,10 +7,14 @@ class DashboardPage(BasePage):
 
         self.upgrade_btn= (By.XPATH, '//button[@class="oxd-glass-button orangehrm-upgrade-button"]')
         self.admin_btn= (By.XPATH, '//a[@href="/web/index.php/admin/viewAdminModule"]')
+        self.employee_btn= (By.XPATH, '//a[@href="/web/index.php/pim/viewPimModule"]')
 
     def is_upgrade_button_displayed(self):
         return self.is_displayed(self.upgrade_btn)
     
     def navigate_to_admin_page(self):
         self.click(self.admin_btn)
+
+    def navigate_to_employee_page(self):
+        self.click(self.employee_btn)
         

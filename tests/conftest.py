@@ -1,28 +1,30 @@
-import pytest
-import allure
 import os
 from datetime import datetime
-from selenium import webdriver
 from tempfile import TemporaryDirectory
+
+import allure
+import pytest
+from selenium import webdriver
+
 from utils.config_reader import ConfigReader
 from pages.login_page import LoginPage
 
-@pytest.fixture(scope="function")
-def driver():
-    temp_profile = TemporaryDirectory(prefix="orangehrm_")
-    
+
+def build_browser_options():
     options = webdriver.ChromeOptions()
-    
-    # --- Profile & Security ---
-    options.add_argument(f"--user-data-dir={temp_profile.name}")
+    profile = TemporaryDirectory(prefix="orangehrm_")
+
+    options.add_argument(f"--user-data-dir={profile.name}")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--no-default-browser-check")
     options.add_argument("--no-first-run")
-    options.add_argument("--disable-features=PasswordCheck,PasswordManagerOnboarding,AutofillServerCommunication")
+    options.add_argument(
+        "--disable-features=PasswordCheck,PasswordManagerOnboarding,"
+        "AutofillServerCommunication"
+    )
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.page_load_strategy = 'eager'
-
+    options.page_load_strategy = "eager"
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("prefs", {
         "credentials_enable_service": False,
@@ -33,17 +35,24 @@ def driver():
         "useAutomationExtension": False,
     })
 
-    # --- Headless ---
     if ConfigReader.is_headless():
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
 
+    return options, profile
+
+
+@pytest.fixture(scope="function")
+def driver():
+    options, temp_profile = build_browser_options()
     driver = None
     try:
+        browser = ConfigReader.get_browser().lower()
+        if browser != "chrome":
+            raise ValueError(f"Unsupported browser: {browser}")
+
         driver = webdriver.Chrome(options=options)
         explicit_wait = ConfigReader.get_explicit_wait()
-        driver.command_executor.set_timeout(explicit_wait)
-        driver.implicitly_wait(ConfigReader.get_implicit_wait())
         driver.set_page_load_timeout(explicit_wait)
 
         if not ConfigReader.is_headless():

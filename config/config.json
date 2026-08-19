@@ -4,7 +4,6 @@
     "browser": "chrome",
     "timeout": {
         "implicit_wait": 10,
-        "explicit_wait": 30,
-        "dropdown_pause": 5
+        "explicit_wait": 30
     }
 }

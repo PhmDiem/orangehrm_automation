@@ -2,6 +2,7 @@ __pycache__/
 .pytest_cache/
 allure-results/
 allure-report/
+reports/
 screenshots/*.png
 *.log
 .env

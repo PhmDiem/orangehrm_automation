@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
+from selenium.webdriver.support import expected_conditions as EC
 
 class LoginPage(BasePage):
     def __init__(self, driver):
@@ -23,10 +24,11 @@ class LoginPage(BasePage):
         return self.is_displayed(self.login_title)
 
     def get_error_message(self):
-        if self.is_element_visible(self.Invalid_error_message):
-            return self.get_text(self.Invalid_error_message)
-        else:
-            return self.get_text(self.required_error_message)
+        element = self.wait_for_any_visible(
+            self.Invalid_error_message,
+            self.required_error_message,
+        )
+        return element.text
         
     def logout(self):
         self.click(self.user_dropdown)    

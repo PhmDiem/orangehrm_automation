@@ -4,6 +4,8 @@ import time
 
 class TestData:
 
+    DEFAULT_ROLE = "ESS"
+    DEFAULT_STATUS = "Enabled"
     DEFAULT_PASSWORD = "Test@123"
 
     @staticmethod
