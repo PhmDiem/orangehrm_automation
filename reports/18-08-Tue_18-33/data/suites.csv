@@ -1,5 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","26758","test_create_new_user","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
-"","11474","test_create_user_without_username","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
-"","4578","test_view_list_of_users","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
-"","24792","test_create_duplicate_username","tests.admin","2026-08-18","passed","2026-08-18","TestUserManagement","test_user_management","",""
