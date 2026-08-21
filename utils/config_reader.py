@@ -4,6 +4,7 @@ import os
 
 class ConfigReader:
     """Đọc và cache các file JSON dùng chung cho framework test."""
+
     _configs = {}
 
     # config_reader.py -> utils/ -> project root
@@ -13,7 +14,9 @@ class ConfigReader:
     def load_file(file_key, folder_name, file_name):
         """Đọc 1 file JSON, cache theo file_key. Raise lỗi rõ ràng nếu có vấn đề."""
         if file_key not in ConfigReader._configs:
-            file_path = os.path.join(ConfigReader.BASE_DIR, folder_name, file_name)
+            file_path = os.path.join(
+                ConfigReader.BASE_DIR, folder_name, file_name
+            )
 
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(f"Không tìm thấy file: {file_path}")
@@ -22,7 +25,9 @@ class ConfigReader:
                 with open(file_path, "r", encoding="utf-8") as f:
                     ConfigReader._configs[file_key] = json.load(f)
             except json.JSONDecodeError as e:
-                raise ValueError(f"File '{file_path}' không đúng format JSON: {e}")
+                raise ValueError(
+                    f"File '{file_path}' không đúng format JSON: {e}"
+                )
 
         return ConfigReader._configs[file_key]
 
@@ -49,7 +54,6 @@ class ConfigReader:
             raise KeyError(f"Không tìm thấy employee type '{employee_type}'")
         return employee
 
-
     # --- Các hàm tiện ích gọi nhanh ---
 
     @staticmethod
@@ -58,7 +62,7 @@ class ConfigReader:
             "ORANGEHRM_HEADLESS",
             ConfigReader.get_config().get("isHeadless", False),
         )
-    
+
     @staticmethod
     def get_browser():
         return os.getenv(
@@ -107,11 +111,11 @@ class ConfigReader:
         raise ValueError(
             f"Environment variable '{env_name}' must be a boolean value"
         )
-    
+
     @staticmethod
     def get_implicit_wait():
         return ConfigReader.get_timeout("implicit_wait")
-    
+
     @staticmethod
     def get_explicit_wait():
         return ConfigReader.get_timeout("explicit_wait")
@@ -136,7 +140,7 @@ class ConfigReader:
             user_config.get("password"),
         )
         return user_config
-    
+
     @staticmethod
     def get_username(user_type="admin"):
         return ConfigReader.get_user(user_type).get("username")
@@ -144,6 +148,7 @@ class ConfigReader:
     @staticmethod
     def get_password(user_type="admin"):
         return ConfigReader.get_user(user_type).get("password")
+
     # --- Tiện ích quản lý cache ---
 
     @staticmethod

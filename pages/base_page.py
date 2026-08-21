@@ -1,4 +1,5 @@
-import time
+import logging
+
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
     NoSuchElementException,
@@ -7,16 +8,20 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from utils.config_reader import ConfigReader
+
+logger = logging.getLogger(__name__)
 
 
 class BasePage:
     def __init__(self, driver):
         self.driver = driver
-        self.wait = WebDriverWait(self.driver, ConfigReader.get_explicit_wait())
+        self.wait = WebDriverWait(
+            self.driver, ConfigReader.get_explicit_wait()
+        )
 
     def find_element(self, locator):
         return self.wait.until(EC.presence_of_element_located(locator))
@@ -39,7 +44,9 @@ class BasePage:
         element.send_keys(text)
 
     def is_displayed(self, locator):
-        return self.wait.until(EC.visibility_of_element_located(locator)).is_displayed()
+        return self.wait.until(
+            EC.visibility_of_element_located(locator)
+        ).is_displayed()
 
     def is_element_visible(self, locator, timeout=None):
         """Wait up to `timeout` (default = explicit wait) for visibility.
@@ -57,7 +64,9 @@ class BasePage:
 
     def wait_for_any_visible(self, *locators):
         """Wait until any of the given locators becomes visible; return the matched element."""
-        conditions = [EC.visibility_of_element_located(loc) for loc in locators]
+        conditions = [
+            EC.visibility_of_element_located(loc) for loc in locators
+        ]
         return self.wait.until(EC.any_of(*conditions))
 
     def get_text(self, locator):
@@ -91,7 +100,9 @@ class BasePage:
 
                 for option in options:
                     option_text = self._normalize_text(option.text)
-                    if not option_text or (expected and expected not in option_text):
+                    if not option_text or (
+                        expected and expected not in option_text
+                    ):
                         continue
 
                     if option.is_displayed() and option.is_enabled():
@@ -115,7 +126,11 @@ class BasePage:
         """
         wait_time = timeout or ConfigReader.get_explicit_wait()
         element = WebDriverWait(self.driver, wait_time).until(
-            lambda d: d.find_element(*locator) if d.find_element(*locator).text.strip() else False
+            lambda d: (
+                d.find_element(*locator)
+                if d.find_element(*locator).text.strip()
+                else False
+            )
         )
         return element.text
 
@@ -129,9 +144,10 @@ class BasePage:
                 )
             )
         except TimeoutException:
-            print(
-                f"Spinner vẫn chưa biến mất sau {wait_time}s. "
-                f"URL hiện tại: {self.driver.current_url}"
+            logger.error(
+                "Spinner did not disappear after %ss. Current URL: %s",
+                wait_time,
+                self.driver.current_url,
             )
             raise
 
@@ -147,4 +163,3 @@ class BasePage:
     @staticmethod
     def _normalize_text(value):
         return " ".join((value or "").split()).casefold()
-        

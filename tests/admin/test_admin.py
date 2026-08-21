@@ -1,11 +1,12 @@
 import allure
 import pytest
 
-from utils.test_data import TestData
-from pages.dashboard_page import DashboardPage
-from pages.admin.user_management_page import UserManagementPage
 from pages.admin.add_user_page import AddUserPage
 from pages.admin.edit_user_page import EditUserPage
+from pages.admin.user_management_page import UserManagementPage
+from pages.dashboard_page import DashboardPage
+from utils.test_data import TestData
+
 
 @pytest.mark.admin
 class TestUserManagement:
@@ -23,11 +24,11 @@ class TestUserManagement:
 
         def cleanup():
             cleanup_errors = []
+
             for username in usernames:
                 try:
-                    self.dashboard_page.navigate_to_admin_page()
-                    self.user_management_page.enter_username_search(username)
-                    self.user_management_page.click_search_btn()
+                    self._navigate_to_admin()
+                    self._search_user_by_username(username)
 
                     if self.user_management_page.is_user_displayed(username):
                         self.user_management_page.delete_user_row(username)
@@ -46,43 +47,65 @@ class TestUserManagement:
         request.addfinalizer(cleanup)
         return usernames
 
+    def _navigate_to_admin(self):
+        self.dashboard_page.navigate_to_admin_page()
+
     def _create_user(self, username):
         self.user_management_page.navigate_to_add_user()
         self.add_user_page.create_user(
             TestData.DEFAULT_ROLE,
             TestData.DEFAULT_STATUS,
             username,
-            TestData.DEFAULT_PASSWORD
+            TestData.DEFAULT_PASSWORD,
         )
+
+    def _create_user_data(self):
+        return TestData.generate_username()
+
+    def _search_user_by_username(self, username):
+        self.user_management_page.enter_username_search(username)
+        self.user_management_page.click_search_btn()
+
+    def _search_user_by_role(self, role):
+        self.user_management_page.select_user_role(role)
+        self.user_management_page.click_search_btn()
+
+    def _verify_user_management_displayed(self):
+        assert (
+            self.user_management_page.is_user_management_displayed()
+        ), "User Management page is not displayed"
+
+    def _create_and_verify_user(self, username):
+        self._create_user(username)
+        self._verify_user_management_displayed()
 
     @pytest.mark.view_users
     @allure.title("View list of users")
     def test_view_list_of_users(self):
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step("Verify user list is displayed"):
-            assert self.user_management_page.is_users_list_displayed(), \
-                "User list is not displayed"
+            assert (
+                self.user_management_page.is_users_list_displayed()
+            ), "User list is not displayed"
 
         with allure.step("Verify at least one user record exists"):
-            assert self.user_management_page.get_user_row_count() > 0, \
-                "User list is empty"
+            assert (
+                self.user_management_page.get_user_row_count() > 0
+            ), "User list is empty"
 
     @pytest.mark.new_user
     @allure.title("Create a new ESS user")
     def test_create_new_user(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step(f"Create new ESS user: {username}"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step("Search for the newly created user"):
             self.user_management_page.select_employee()
@@ -96,17 +119,14 @@ class TestUserManagement:
     @pytest.mark.duplicate
     @allure.title("Create user with duplicate username")
     def test_create_duplicate_username(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step("Create the first user"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step("Attempt to create user with duplicate username"):
             self._create_user(username)
@@ -115,14 +135,16 @@ class TestUserManagement:
             assert self.add_user_page.is_username_error_displayed()
 
         with allure.step("Verify error message contains 'Already exists'"):
-            assert "Already exists" in self.add_user_page.get_username_error_text()
+            assert (
+                "Already exists"
+                in self.add_user_page.get_username_error_text()
+            )
 
     @pytest.mark.required
     @allure.title("Create user without username")
     def test_create_user_without_username(self):
-
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step("Navigate to Add User page"):
             self.user_management_page.navigate_to_add_user()
@@ -131,7 +153,7 @@ class TestUserManagement:
             self.add_user_page.create_user_without_username(
                 TestData.DEFAULT_ROLE,
                 TestData.DEFAULT_STATUS,
-                TestData.DEFAULT_PASSWORD
+                TestData.DEFAULT_PASSWORD,
             )
 
         with allure.step("Verify required error is displayed"):
@@ -143,21 +165,17 @@ class TestUserManagement:
     @pytest.mark.search_by_username
     @allure.title("Search for user by username")
     def test_search_by_username(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step(f"Create new ESS user: {username}"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step(f"Search for user by username: {username}"):
-            self.user_management_page.enter_username_search(username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(username)
 
         with allure.step("Verify user appears in search results"):
             row_text = self.user_management_page.get_user_row_text(username)
@@ -166,21 +184,17 @@ class TestUserManagement:
     @pytest.mark.search_by_role
     @allure.title("Search for user by role")
     def test_search_by_role(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step(f"Create new ESS user: {username}"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step("Search for user by role: ESS"):
-            self.user_management_page.select_user_role(TestData.DEFAULT_ROLE)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_role(TestData.DEFAULT_ROLE)
 
         with allure.step("Verify user appears in search results"):
             row_text = self.user_management_page.get_user_row_text(username)
@@ -190,13 +204,12 @@ class TestUserManagement:
     @allure.title("Search for non-existent user")
     def test_search_nonexistent_user(self):
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         fake_username = TestData.generate_username(prefix="nonexistent")
 
         with allure.step(f"Search for non-existent user: {fake_username}"):
-            self.user_management_page.enter_username_search(fake_username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(fake_username)
 
         with allure.step("Verify no records found message is displayed"):
             assert self.user_management_page.is_no_records_found_displayed()
@@ -204,21 +217,17 @@ class TestUserManagement:
     @pytest.mark.edit_user
     @allure.title("Edit user role")
     def test_edit_user_change_role(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step(f"Create new ESS user: {username}"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step(f"Search for user: {username}"):
-            self.user_management_page.enter_username_search(username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(username)
 
         with allure.step(f"Open user for editing: {username}"):
             self.user_management_page.click_user_row(username)
@@ -228,11 +237,10 @@ class TestUserManagement:
             self.edit_user_page.click_save_btn()
 
         with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._verify_user_management_displayed()
 
         with allure.step(f"Search for updated user: {username}"):
-            self.user_management_page.enter_username_search(username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(username)
 
         with allure.step("Verify user role has been changed to Admin"):
             row_text = self.user_management_page.get_user_row_text(username)
@@ -241,21 +249,17 @@ class TestUserManagement:
     @pytest.mark.delete_user
     @allure.title("Delete single user")
     def test_delete_single_user(self, created_users):
-        username = TestData.generate_username()
+        username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
+            self._navigate_to_admin()
 
         with allure.step(f"Create new ESS user: {username}"):
-            self._create_user(username)
-
-        with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._create_and_verify_user(username)
 
         with allure.step(f"Search for user: {username}"):
-            self.user_management_page.enter_username_search(username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(username)
 
         with allure.step(f"Delete user: {username}"):
             self.user_management_page.delete_user_row(username)
@@ -264,8 +268,7 @@ class TestUserManagement:
             self.user_management_page.confirm_delete()
 
         with allure.step(f"Search for deleted user: {username}"):
-            self.user_management_page.enter_username_search(username)
-            self.user_management_page.click_search_btn()
+            self._search_user_by_username(username)
 
         with allure.step("Verify deleted user is no longer found"):
             assert self.user_management_page.is_no_records_found_displayed()
@@ -273,32 +276,30 @@ class TestUserManagement:
     @pytest.mark.bulk_delete_users
     @allure.title("Bulk delete users")
     def test_bulk_delete_users(self, created_users):
+        usernames = []
 
         with allure.step("Navigate to Admin page"):
-            self.dashboard_page.navigate_to_admin_page()
-
-        usernames = []
+            self._navigate_to_admin()
 
         with allure.step("Create 2 users"):
             for _ in range(2):
-                username = TestData.generate_username()
+                username = self._create_user_data()
                 usernames.append(username)
                 created_users.append(username)
-
                 self._create_user(username)
 
         with allure.step("Verify User Management page is displayed"):
-            assert self.user_management_page.is_user_management_displayed()
+            self._verify_user_management_displayed()
 
         with allure.step("Select created users for deletion"):
             for username in usernames:
                 with allure.step(f"Search for user: {username}"):
-                    self.user_management_page.enter_username_search(username)
-                    self.user_management_page.click_search_btn()
+                    self._search_user_by_username(username)
 
                 with allure.step(f"Verify user is displayed: {username}"):
-                    assert self.user_management_page.is_user_displayed(username), \
-                        f"User '{username}' is not displayed in current table"
+                    assert self.user_management_page.is_user_displayed(
+                        username
+                    ), f"User '{username}' is not displayed in current table"
 
                 with allure.step(f"Select checkbox for: {username}"):
                     self.user_management_page.select_checkbox(username)
@@ -311,5 +312,6 @@ class TestUserManagement:
 
         with allure.step("Verify deleted users are no longer displayed"):
             for username in usernames:
-                assert not self.user_management_page.is_user_displayed(username), \
-                    f"User '{username}' is still displayed"
+                assert not self.user_management_page.is_user_displayed(
+                    username
+                ), f"User '{username}' is still displayed"

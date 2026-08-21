@@ -1,29 +1,36 @@
-from selenium.webdriver.common.by import By
+import logging
 
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+
 from pages.base_page import BasePage
 from utils.test_data import TestData
+
+logger = logging.getLogger(__name__)
+
 
 class CreateEmployee(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
-        self.first_name = (By.NAME, 'firstName')
-        self.last_name = (By.NAME, 'lastName')
-        self.employee_id = (By.XPATH, '//label[text()="Employee Id"]/following::input[1]')
+        self.first_name = (By.NAME, "firstName")
+        self.last_name = (By.NAME, "lastName")
+        self.employee_id = (
+            By.XPATH,
+            '//label[text()="Employee Id"]/following::input[1]',
+        )
         self.save_btn = (By.XPATH, '//button[@type="submit"]')
         self.employee_id_error = (
             By.XPATH,
-            '//label[text()="Employee Id"]/following::span[contains(@class,"error-message")][1]'
+            '//label[text()="Employee Id"]/following::span[contains(@class,"error-message")][1]',
         )
         self.first_name_error = (
             By.XPATH,
-            '//input[@name="firstName"]/following::span[contains(@class,"error-message")][1]'
+            '//input[@name="firstName"]/following::span[contains(@class,"error-message")][1]',
         )
         self.last_name_error = (
             By.XPATH,
-            '//input[@name="lastName"]/following::span[contains(@class,"error-message")][1]'
+            '//input[@name="lastName"]/following::span[contains(@class,"error-message")][1]',
         )
 
     def enter_first_name(self, first_name):
@@ -39,11 +46,8 @@ class CreateEmployee(BasePage):
         self.click(self.save_btn)
 
     def is_employee_id_duplicate_error_displayed(self, timeout=5):
-        return self.is_element_visible(
-            self.employee_id_error,
-            timeout=timeout
-        )
-        
+        return self.is_element_visible(self.employee_id_error, timeout=timeout)
+
     def is_first_name_error_displayed(self):
         return self.is_element_visible(self.first_name_error, timeout=3)
 
@@ -55,7 +59,9 @@ class CreateEmployee(BasePage):
 
     def create_employee(self, first_name, last_name, max_retries=3):
         for attempt in range(max_retries):
-            print(f"\n========== ATTEMPT {attempt + 1} ==========")
+            logger.info(
+                "Creating employee, attempt %s/%s", attempt + 1, max_retries
+            )
 
             self.wait_for_loading_to_disappear()
 
@@ -65,14 +71,14 @@ class CreateEmployee(BasePage):
             # Generate ID MỚI mỗi attempt
             employee_id = TestData.generate_employee_id()
 
-            print(f"Generated Employee ID: {employee_id}")
+            logger.debug("Generated employee ID: %s", employee_id)
 
             self.enter_employee_id(employee_id)
 
             # Verify ID thực sự được nhập vào input
             actual_id = self.get_employee_id()
 
-            print(f"Actual Employee ID in input: {actual_id}")
+            logger.debug("Actual employee ID in input: %s", actual_id)
 
             if actual_id != employee_id:
                 raise Exception(
@@ -84,12 +90,12 @@ class CreateEmployee(BasePage):
 
             # Duplicate?
             if self.is_employee_id_duplicate_error_displayed(timeout=3):
-                print(
-                    f"Employee ID {employee_id} is duplicated."
-                )
+                logger.warning("Employee ID %s is duplicated", employee_id)
 
                 if attempt < max_retries - 1:
-                    print("Refreshing and generating a new ID...")
+                    logger.info(
+                        "Refreshing before generating a new employee ID"
+                    )
                     self.driver.refresh()
                     continue
 
@@ -99,7 +105,7 @@ class CreateEmployee(BasePage):
                 )
 
             # Save thành công
-            print(f"Employee {employee_id} created successfully.")
+            logger.info("Employee %s created successfully", employee_id)
 
             WebDriverWait(self.driver, 15).until(
                 lambda d: "addEmployee" not in d.current_url
@@ -107,8 +113,4 @@ class CreateEmployee(BasePage):
 
             return employee_id
 
-        raise Exception(
-            f"Cannot create employee after {max_retries} attempts"
-        )
-
-    
+        raise Exception(f"Cannot create employee after {max_retries} attempts")

@@ -2,6 +2,7 @@ import random
 import string
 import time
 
+
 class TestData:
 
     DEFAULT_ROLE = "ESS"
@@ -16,14 +17,12 @@ class TestData:
     @staticmethod
     def generate_random_username(prefix="test_user", length=6):
         suffix = "".join(
-            random.choices(
-                string.ascii_lowercase + string.digits,
-                k=length
-            )
+            random.choices(string.ascii_lowercase + string.digits, k=length)
         )
         return f"{prefix}_{suffix}"
 
         # ==== PIM ====
+
     DEFAULT_GENDER = "Male"
     DEFAULT_BLOOD_TYPE = "O+"
     DEFAULT_DOB = "1995-05-10"
@@ -35,6 +34,4 @@ class TestData:
 
     @staticmethod
     def generate_employee_id(length=4):
-        return "".join(
-            random.choices(string.digits, k=length)
-        )
+        return "".join(random.choices(string.digits, k=length))

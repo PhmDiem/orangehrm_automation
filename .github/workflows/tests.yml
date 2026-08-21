@@ -34,7 +34,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest -m login
+        run: pytest -m admin
 
       - name: Upload Allure results
         if: always()

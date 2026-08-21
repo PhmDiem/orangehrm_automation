@@ -1,23 +1,44 @@
-from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from pages.base_page import BasePage
-from selenium.webdriver.common.keys import Keys
+
 
 class EmployeePage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
-        self.personal_details_heading = (By.XPATH, '//h6[text()="Personal Details"]')
-        self.employee_full_name = (By.XPATH, '//div[contains(@class,"orangehrm-edit-employee-name")]/h6')
+        self.personal_details_heading = (
+            By.XPATH,
+            '//h6[text()="Personal Details"]',
+        )
+        self.employee_full_name = (
+            By.XPATH,
+            '//div[contains(@class,"orangehrm-edit-employee-name")]/h6',
+        )
         self.employee_list_btn = (By.XPATH, '//a[text()="Employee List"]')
-        self.gender_male_radio = (By.XPATH, '//input[@type="radio"][@value="1"]')
-        self.gender_female_radio = (By.XPATH, '//input[@type="radio"][@value="2"]')
-        self.dob_input = (By.XPATH, '//label[text()="Date of Birth"]/following::input[1]')
-        self.blood_type_dropdown = (By.XPATH, '//label[text()="Blood Type"]/following::div[contains(@class,"oxd-select-text")][1]')
+        self.gender_male_radio = (
+            By.XPATH,
+            '//input[@type="radio"][@value="1"]',
+        )
+        self.gender_female_radio = (
+            By.XPATH,
+            '//input[@type="radio"][@value="2"]',
+        )
+        self.dob_input = (
+            By.XPATH,
+            '//label[text()="Date of Birth"]/following::input[1]',
+        )
+        self.blood_type_dropdown = (
+            By.XPATH,
+            '//label[text()="Blood Type"]/following::div[contains(@class,"oxd-select-text")][1]',
+        )
         self.blood_type_option = (By.XPATH, '//div[@role="listbox"]//span')
         self.save_btn = (By.XPATH, '//button[@type="submit"]')
-        self.success_toast = (By.XPATH, '//div[contains(@class,"oxd-toast--success")]')
+        self.success_toast = (
+            By.XPATH,
+            '//div[contains(@class,"oxd-toast--success")]',
+        )
 
     def navigate_to_employee_list(self):
         self.click(self.employee_list_btn)
@@ -29,11 +50,17 @@ class EmployeePage(BasePage):
         return self.get_text_when_ready(self.employee_full_name)
 
     def is_personal_details_displayed_immediate(self):
-        return self.is_element_visible(self.personal_details_heading, timeout=3)
+        return self.is_element_visible(
+            self.personal_details_heading, timeout=3
+        )
 
     def select_gender(self, gender):
         self.wait_for_loading_to_disappear()
-        locator = self.gender_male_radio if gender.lower() == "male" else self.gender_female_radio
+        locator = (
+            self.gender_male_radio
+            if gender.lower() == "male"
+            else self.gender_female_radio
+        )
         self.click_via_js(locator)
 
     def enter_dob(self, dob):
@@ -43,7 +70,9 @@ class EmployeePage(BasePage):
 
     def select_blood_type(self, blood_type):
         self.click(self.blood_type_dropdown)
-        self.click_dropdown_option(self.blood_type_option, expected_text=blood_type)
+        self.click_dropdown_option(
+            self.blood_type_option, expected_text=blood_type
+        )
 
     def click_save(self):
         self.click(self.save_btn)
