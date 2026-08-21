@@ -7,7 +7,6 @@ from pages.admin.user_management_page import UserManagementPage
 from pages.admin.add_user_page import AddUserPage
 from pages.admin.edit_user_page import EditUserPage
 
-
 @pytest.mark.admin
 class TestUserManagement:
 
@@ -56,6 +55,7 @@ class TestUserManagement:
             TestData.DEFAULT_PASSWORD
         )
 
+    @pytest.mark.view_users
     @allure.title("View list of users")
     def test_view_list_of_users(self):
         with allure.step("Navigate to Admin page"):
@@ -64,6 +64,10 @@ class TestUserManagement:
         with allure.step("Verify user list is displayed"):
             assert self.user_management_page.is_users_list_displayed(), \
                 "User list is not displayed"
+
+        with allure.step("Verify at least one user record exists"):
+            assert self.user_management_page.get_user_row_count() > 0, \
+                "User list is empty"
 
     @pytest.mark.new_user
     @allure.title("Create a new ESS user")

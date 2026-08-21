@@ -9,6 +9,7 @@ class UserManagementPage(BasePage):
 
         self.system_users = (By.XPATH, '//h5[text()="System Users"]')
         self.users_list = (By.XPATH, '//div[@class="oxd-table"]')
+        self.user_rows = (By.CSS_SELECTOR, '.oxd-table .oxd-table-card')
         self.add_btn = (
             By.XPATH,
             '//button[@class="oxd-button oxd-button--medium oxd-button--secondary"]'
@@ -36,6 +37,9 @@ class UserManagementPage(BasePage):
 
     def is_users_list_displayed(self):
         return self.is_displayed(self.users_list)
+
+    def get_user_row_count(self):
+        return len(self.find_elements(self.user_rows))
     
     def navigate_to_add_user(self):
         self.click(self.add_btn) 

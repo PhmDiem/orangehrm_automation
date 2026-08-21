@@ -1,23 +1,11 @@
 {
-  "validEmployee": {
-    "firstName": "John",
-    "lastName": "Doe",
-    "employeeId": "AUTO_GEN"
-  },
-  "searchExisting": {
-    "firstName": "Amelia",
-    "lastName": "Brown"
-  },
   "searchNoResult": {
+    "employeeId": "999999",
     "firstName": "ZZZNotExist"
   },
   "updateProfile": {
-    "gender": "Male",
-    "dob": "1995-05-10",
+    "gender": "Famale",
+    "dob": "2003-23-10",
     "bloodType": "O+"
-  },
-  "employeeToDelete": {
-    "firstName": "DeleteMe",
-    "lastName": "Temp"
   }
 }

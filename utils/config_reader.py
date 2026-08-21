@@ -39,21 +39,15 @@ class ConfigReader:
         return users_data.get("users", {})
 
     @staticmethod
-    def get_employee_name(employee_type="searchExisting"):
+    def get_employee_data(employee_type="searchNoResult"):
+        """Return raw employee data dict for a given type from data/employee_data.json."""
         employees_data = ConfigReader.load_file(
             "employees", "data", "employee_data.json"
         )
         employee = employees_data.get(employee_type)
         if not employee:
             raise KeyError(f"Không tìm thấy employee type '{employee_type}'")
-
-        return " ".join(
-            value for value in (
-                employee.get("firstName"),
-                employee.get("middleName"),
-                employee.get("lastName"),
-            ) if value
-        )
+        return employee
 
 
     # --- Các hàm tiện ích gọi nhanh ---

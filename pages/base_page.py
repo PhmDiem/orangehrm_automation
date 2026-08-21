@@ -1,9 +1,11 @@
+import time
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
     NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
 )
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,13 +25,10 @@ class BasePage:
         return self.wait.until(EC.visibility_of_all_elements_located(locator))
 
     def send_keys(self, locator, text):
-        """Clear the field and type `text`.
-
-        Uses Ctrl+A + Delete (instead of `.clear()`) and dispatches a manual
-        `input` event, since React-controlled inputs can silently ignore
-        `.clear()` and end up appending instead of replacing the value.
-        """
         element = self.find_element(locator)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", element
+        )
         element.click()
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.DELETE)
@@ -108,6 +107,44 @@ class BasePage:
 
         self.wait.until(click_available_option)
 
+    def get_text_when_ready(self, locator, timeout=None):
+        """Wait until the element's text is non-empty, then return it.
+
+        Unlike get_text(), this handles SPA cases where the element exists
+        in the DOM before its content has finished rendering.
+        """
+        wait_time = timeout or ConfigReader.get_explicit_wait()
+        element = WebDriverWait(self.driver, wait_time).until(
+            lambda d: d.find_element(*locator) if d.find_element(*locator).text.strip() else False
+        )
+        return element.text
+
+    def wait_for_loading_to_disappear(self, timeout=None):
+        wait_time = timeout or ConfigReader.get_explicit_wait()
+
+        try:
+            WebDriverWait(self.driver, wait_time).until(
+                EC.invisibility_of_element_located(
+                    (By.CLASS_NAME, "oxd-loading-spinner")
+                )
+            )
+        except TimeoutException:
+            print(
+                f"Spinner vẫn chưa biến mất sau {wait_time}s. "
+                f"URL hiện tại: {self.driver.current_url}"
+            )
+            raise
+
+    def click_via_js(self, locator):
+        """Click an element via JS, bypassing Selenium's visibility check.
+
+        Useful for custom-styled radio/checkbox inputs whose native <input>
+        is visually hidden behind a styled label/span.
+        """
+        element = self.find_element(locator)
+        self.driver.execute_script("arguments[0].click();", element)
+
     @staticmethod
     def _normalize_text(value):
         return " ".join((value or "").split()).casefold()
+        
