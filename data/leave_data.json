@@ -1,0 +1,15 @@
+{
+  "employee_name": "Paradox Manasseh",
+  "entitlement_days_to_grant": 10,
+  "valid_leave": {
+    "leave_type": "CAN - Personal"
+  },
+  "past_date_leave": {
+    "leave_type": "CAN - Personal"
+  },
+  "missing_field_leave": {
+    "leave_type": "",
+    "from_date": "2026-09-01",
+    "to_date": "2026-09-02"
+  }
+}

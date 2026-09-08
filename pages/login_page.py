@@ -34,6 +34,14 @@ class LoginPage(BasePage):
         self.send_keys(self.password_field, password)
         self.click(self.click_btn)
 
+    def login_and_wait(self, username, password, dashboard_locator):
+        self.login(username, password)
+        if self.is_element_visible(self.Invalid_error_message, timeout=3):
+            raise AssertionError(
+                f"Login failed for '{username}': {self.get_error_message()}"
+            )
+        self.wait.until(lambda d: d.find_element(*dashboard_locator).is_displayed())
+
     def is_login_displayed(self):
         return self.is_displayed(self.login_title)
 

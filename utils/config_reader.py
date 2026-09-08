@@ -54,6 +54,19 @@ class ConfigReader:
             raise KeyError(f"Không tìm thấy employee type '{employee_type}'")
         return employee
 
+    @staticmethod
+    def get_leave_data(leave_type="valid_leave"):
+        """Return raw leave data dict for a given type from data/leave_data.json."""
+        leave_data = ConfigReader.load_file(
+            "leave", "data", "leave_data.json"
+        )
+        data = leave_data.get(leave_type)
+        if data is None:
+            raise KeyError(f"Không tìm thấy leave data type '{leave_type}'")
+        return data
+
+    
+
     # --- Các hàm tiện ích gọi nhanh ---
 
     @staticmethod
@@ -148,6 +161,17 @@ class ConfigReader:
     @staticmethod
     def get_password(user_type="admin"):
         return ConfigReader.get_user(user_type).get("password")
+
+    @staticmethod
+    def get_leave_employee_name():
+        """Return the employee name entitlements should be assigned to."""
+        leave_data = ConfigReader.load_file(
+            "leave", "data", "leave_data.json"
+        )
+        name = leave_data.get("employee_name")
+        if not name:
+            raise KeyError("Không tìm thấy 'employee_name' trong data/leave_data.json")
+        return name
 
     # --- Tiện ích quản lý cache ---
 

@@ -20,6 +20,16 @@ class DashboardPage(BasePage):
             '//a[@href="/web/index.php/pim/viewPimModule"]',
         )
 
+        self.leave_btn = (
+            By.XPATH,
+            '//a[@href="/web/index.php/leave/viewLeaveModule"]',
+        )
+
+        self.my_info_btn = (
+            By.XPATH,
+            '//a[@href="/web/index.php/pim/viewMyDetails"]',
+        )
+
     def is_upgrade_button_displayed(self):
         return self.is_displayed(self.upgrade_btn)
 
@@ -28,3 +38,9 @@ class DashboardPage(BasePage):
 
     def navigate_to_pim_page(self):
         self.click(self.pim_btn)
+
+    def navigate_to_leave_page(self):
+        self.click(self.leave_btn)
+
+    def navigate_to_my_info_page(self):
+        self.click(self.my_info_btn)
