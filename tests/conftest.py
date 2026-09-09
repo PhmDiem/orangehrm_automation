@@ -2,7 +2,6 @@ import logging
 
 import pytest
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 
 from pages.admin.user_management_page import UserManagementPage
 from pages.dashboard_page import DashboardPage
@@ -16,7 +15,6 @@ from pages.pim.pim_page import PIMPage
 from pages.login_page import LoginPage
 from utils.allure_helper import attach_failure_screenshot
 from utils.browser_options import build_chrome_options
-from utils.chromedriver import get_chromedriver_path
 from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
@@ -33,7 +31,6 @@ def driver():
 
         if browser == "chrome":
             driver = webdriver.Chrome(
-                service=Service(get_chromedriver_path()),
                 options=options,
             )
         else:
@@ -50,6 +47,7 @@ def driver():
 
         driver.get(ConfigReader.get_url())
         yield driver
+
     finally:
         if driver:
             try:
