@@ -94,6 +94,7 @@ class TestApplyLeave:
             row_text = self.my_leave_page.get_row_by_marker(marker)
             assert row_text is not None, f"Không tìm thấy request với marker '{marker}' trong My Leave"
             assert "pending" in row_text.lower(), f"Expected Pending status, got: {row_text}"
+            self.my_leave_page.cancel_leave_by_marker(marker)
 
     @allure.story("TC03 - Apply leave ngày quá khứ")
     def test_apply_leave_past_date_shows_error(self, leave_data, ensure_leave_entitlement):

@@ -103,7 +103,14 @@ class ApplyLeavePage(BasePage):
         # ảnh hưởng tới lần mở calendar tiếp theo (From Date -> To Date)
         self.wait.until(lambda d: len(d.find_elements(*self.calendar_date_cells)) == 0)
 
-    def apply_leave(self, leave_type: str, from_date: str, to_date: str, comment: str = None):
+    def apply_leave(
+        self,
+        leave_type: str,
+        from_date: str,
+        to_date: str,
+        comment: str = None,
+        wait_for_feedback: bool = True,
+    ):
         if leave_type:
             self.click(self.leave_type_dropdown)
             self.click_dropdown_option(self.leave_type_options, expected_text=leave_type)
@@ -118,9 +125,10 @@ class ApplyLeavePage(BasePage):
             self.send_keys(self.comments_input, comment)
 
         self.click(self.apply_btn)
-        self.wait_for_any_visible(
-            self.toast_success, self.error_messages, self.overlap_warning_header
-        )
+        if wait_for_feedback:
+            self.wait_for_any_visible(
+                self.toast_success, self.error_messages, self.overlap_warning_header
+            )
 
     def is_overlap_warning_shown(self) -> bool:
         """

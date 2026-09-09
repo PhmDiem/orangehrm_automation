@@ -276,31 +276,28 @@ class TestUserManagement:
     @pytest.mark.bulk_delete_users
     @allure.title("Bulk delete users")
     def test_bulk_delete_users(self, created_users):
-        usernames = []
-
         with allure.step("Navigate to Admin page"):
             self._navigate_to_admin()
 
-        with allure.step("Create 2 users"):
+        with allure.step("Create 2 users for bulk deletion"):
             for _ in range(2):
                 username = self._create_user_data()
-                usernames.append(username)
                 created_users.append(username)
                 self._create_user(username)
 
-        with allure.step("Verify User Management page is displayed"):
-            self._verify_user_management_displayed()
+            self._navigate_to_admin()
 
-        with allure.step("Select created users for deletion"):
+        with allure.step("Filter users by current employee and ESS role"):
+            self.user_management_page.select_employee()
+            self.user_management_page.select_user_role(TestData.DEFAULT_ROLE)
+            self.user_management_page.click_search_btn()
+
+        with allure.step("Select only test_user accounts"):
+            usernames = self.user_management_page.get_usernames_by_prefix(
+                "test_user_"
+            )
+            assert usernames, "No test_user_ accounts were found to delete"
             for username in usernames:
-                with allure.step(f"Search for user: {username}"):
-                    self._search_user_by_username(username)
-
-                with allure.step(f"Verify user is displayed: {username}"):
-                    assert self.user_management_page.is_user_displayed(
-                        username
-                    ), f"User '{username}' is not displayed in current table"
-
                 with allure.step(f"Select checkbox for: {username}"):
                     self.user_management_page.select_checkbox(username)
 

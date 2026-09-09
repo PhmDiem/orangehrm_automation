@@ -140,8 +140,18 @@ class UserManagementPage(BasePage):
             f'//div[@role="row"][.//*[normalize-space(text())="{username}"]]'
             f'//input[@type="checkbox"]',
         )
-        checkbox = self.find_element(checkbox_locator)
-        self.driver.execute_script("arguments[0].click();", checkbox)
+
+        def click_fresh_checkbox(driver):
+            try:
+                checkbox = driver.find_element(*checkbox_locator)
+                if checkbox.is_enabled():
+                    driver.execute_script("arguments[0].click();", checkbox)
+                    return True
+            except StaleElementReferenceException:
+                return False
+            return False
+
+        self.wait.until(click_fresh_checkbox)
 
     def click_bulk_delete_btn(self):
         self.click(self.bulk_delete_btn)
@@ -153,3 +163,16 @@ class UserManagementPage(BasePage):
             f'[.//*[normalize-space(text())="{username}"]]',
         )
         return self.is_element_visible(user_row)
+
+    def get_usernames_by_prefix(self, prefix):
+        username_cells = (
+            By.XPATH,
+            f'//div[@role="row"]//*[starts-with(normalize-space(text()), "{prefix}")]',
+        )
+        return list(
+            dict.fromkeys(
+                element.text.strip()
+                for element in self.find_elements(username_cells)
+                if element.text.strip()
+            )
+        )

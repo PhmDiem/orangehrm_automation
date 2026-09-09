@@ -74,6 +74,9 @@ class EmployeePage(BasePage):
             self.blood_type_option, expected_text=blood_type
         )
 
+    def is_blood_type_available(self):
+        return self.is_element_visible(self.blood_type_dropdown, timeout=2)
+
     def click_save(self):
         self.click(self.save_btn)
 

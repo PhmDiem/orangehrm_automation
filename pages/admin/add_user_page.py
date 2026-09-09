@@ -34,7 +34,6 @@ class AddUserPage(BasePage):
             '//label[text()="Confirm Password"]/following::input[1]',
         )
         self.save_btn = (By.XPATH, '//button[@type="submit"]')
-        self.success_toast = (By.CSS_SELECTOR, '.oxd-toast--success')
         self.username_error = (By.XPATH, '//span[text()="Already exists"]')
         self.required_error_message = (By.XPATH, '//span[text()="Required"]')
 
@@ -47,10 +46,10 @@ class AddUserPage(BasePage):
             )
         )
 
-    def select_employee(self, employee_name=None):
-        employee_name = employee_name or self.get_text(self.employee_name)
+    def select_employee(self):
+        employee_name = self.get_text(self.employee_name)
         self.send_keys(self.input_employee_name, employee_name)
-        self.click_dropdown_option(self.option_employee, expected_text=employee_name)
+        self.click_dropdown_option(self.option_employee)
 
     def select_status(self, status):
         self.click(self.status)
@@ -73,14 +72,9 @@ class AddUserPage(BasePage):
     def click_save_btn(self):
         self.click(self.save_btn)
 
-    def is_save_successful(self, timeout=8):
-        if self.is_element_visible(self.success_toast, timeout=timeout):
-            return True
-        return "viewSystemUsers" in self.driver.current_url
-
-    def create_user(self, role, status, username, password, employee_name=None):
+    def create_user(self, role, status, username, password):
         self.select_user_role(role)
-        self.select_employee(employee_name)
+        self.select_employee()
         self.select_status(status)
         self.enter_username(username)
         self.enter_password(password)

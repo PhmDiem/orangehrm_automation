@@ -46,3 +46,27 @@ class MyLeavePage(BasePage):
             if marker in row.text:
                 return row.text
         return None
+
+    def cancel_leave_by_marker(self, marker: str):
+        """Cancel a pending request created by the current test."""
+        row_locator = (
+            By.XPATH,
+            f"//div[@class='oxd-table-body']//div[@role='row'][contains(., '{marker}')]",
+        )
+        row = self.find_element(row_locator)
+        cancel_button = row.find_element(
+            By.XPATH, ".//button[contains(normalize-space(.), 'Cancel')]"
+        )
+        cancel_button.click()
+
+        confirm_button = (By.XPATH, "//button[contains(normalize-space(.), 'Yes, Confirm')]")
+        if self.is_element_visible(confirm_button, timeout=3):
+            self.click(confirm_button)
+
+        # OrangeHRM keeps the row and changes its status to Cancelled.
+        self.wait.until(
+            lambda driver: any(
+                "cancel" in row.text.lower()
+                for row in driver.find_elements(*row_locator)
+            )
+        )

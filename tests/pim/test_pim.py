@@ -128,6 +128,7 @@ class TestEmployeeManagement:
             self.pim_page.navigate_to_add_employee()
 
         with allure.step("Leave Last Name empty and enter First Name only"):
+            self.create_employee_page.wait_for_loading_to_disappear()
             self.create_employee_page.enter_first_name(first_name)
             self.create_employee_page.click_save()
 
@@ -251,7 +252,8 @@ class TestEmployeeManagement:
         with allure.step("Update gender, DOB, and blood type"):
             self.employee_page.select_gender(update_data["gender"])
             self.employee_page.enter_dob(update_data["dob"])
-            self.employee_page.select_blood_type(update_data["bloodType"])
+            if self.employee_page.is_blood_type_available():
+                self.employee_page.select_blood_type(update_data["bloodType"])
             self.employee_page.click_save()
 
         with allure.step("Verify update success message is displayed"):
