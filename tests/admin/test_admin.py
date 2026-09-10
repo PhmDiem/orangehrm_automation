@@ -5,6 +5,7 @@ from pages.admin.add_user_page import AddUserPage
 from pages.admin.edit_user_page import EditUserPage
 from pages.admin.user_management_page import UserManagementPage
 from pages.dashboard_page import DashboardPage
+from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
 
@@ -50,13 +51,13 @@ class TestUserManagement:
     def _navigate_to_admin(self):
         self.dashboard_page.navigate_to_admin_page()
 
-    def _create_user(self, username):
+    def _create_user(self, username, role=TestData.DEFAULT_ROLE):
         self.user_management_page.navigate_to_add_user()
         self.add_user_page.create_user(
-            TestData.DEFAULT_ROLE,
+            role,
             TestData.DEFAULT_STATUS,
             username,
-            TestData.DEFAULT_PASSWORD,
+            ConfigReader.get_test_user_password(),
         )
 
     def _create_user_data(self):
@@ -75,8 +76,8 @@ class TestUserManagement:
             self.user_management_page.is_user_management_displayed()
         ), "User Management page is not displayed"
 
-    def _create_and_verify_user(self, username):
-        self._create_user(username)
+    def _create_and_verify_user(self, username, role=TestData.DEFAULT_ROLE):
+        self._create_user(username, role)
         self._verify_user_management_displayed()
 
     @pytest.mark.view_users
@@ -153,7 +154,7 @@ class TestUserManagement:
             self.add_user_page.create_user_without_username(
                 TestData.DEFAULT_ROLE,
                 TestData.DEFAULT_STATUS,
-                TestData.DEFAULT_PASSWORD,
+                ConfigReader.get_test_user_password(),
             )
 
         with allure.step("Verify required error is displayed"):
@@ -182,23 +183,25 @@ class TestUserManagement:
             assert TestData.DEFAULT_ROLE in row_text
 
     @pytest.mark.search_by_role
+    @pytest.mark.parametrize("role", [TestData.DEFAULT_ROLE, "Admin"])
     @allure.title("Search for user by role")
-    def test_search_by_role(self, created_users):
+    def test_search_by_role(self, created_users, role):
         username = self._create_user_data()
         created_users.append(username)
 
         with allure.step("Navigate to Admin page"):
             self._navigate_to_admin()
 
-        with allure.step(f"Create new ESS user: {username}"):
-            self._create_and_verify_user(username)
+        with allure.step(f"Create new {role} user: {username}"):
+            self._create_and_verify_user(username, role)
 
-        with allure.step("Search for user by role: ESS"):
-            self._search_user_by_role(TestData.DEFAULT_ROLE)
+        with allure.step(f"Search for user by role: {role}"):
+            self._search_user_by_role(role)
 
         with allure.step("Verify user appears in search results"):
             row_text = self.user_management_page.get_user_row_text(username)
-            assert TestData.DEFAULT_ROLE in row_text
+            assert username in row_text
+            assert role in row_text
 
     @pytest.mark.search_nonexistent
     @allure.title("Search for non-existent user")

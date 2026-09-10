@@ -1,0 +1,11 @@
+{
+  "contact": {
+    "street_1": "Automation Street 1",
+    "city": "Ho Chi Minh City",
+    "mobile": "0900000001"
+  },
+  "emergency_contact": {
+    "relationship": "Sibling",
+    "mobile": "0900000002"
+  }
+}

@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class AddEntitlementPage(BasePage):
@@ -42,13 +43,6 @@ class AddEntitlementPage(BasePage):
         self.duplicate_error_toast = (By.XPATH, "//p[contains(text(),'already exists')]")
         self.field_error_messages = (By.CSS_SELECTOR, ".oxd-input-field-error-message")
 
-        self.leave_period_dropdown = (
-            By.XPATH,
-            "//label[text()='Leave Period']/parent::div/following-sibling::div//div[contains(@class,'oxd-select-text-input')]"
-        )
-        self.leave_period_options = (By.CSS_SELECTOR, ".oxd-select-dropdown .oxd-select-option")
-        
-
     # --- Page state ---
 
     def is_page_displayed(self):
@@ -84,7 +78,10 @@ class AddEntitlementPage(BasePage):
         self.click(self.save_btn)
 
         # Modal "Updating Entitlement" chỉ xuất hiện khi entitlement đã tồn tại
-        if self.is_element_visible(self.confirm_modal_btn, timeout=3):
+        if self.is_element_visible(
+            self.confirm_modal_btn,
+            timeout=ConfigReader.get_timeout("medium"),
+        ):
             self.click(self.confirm_modal_btn)
 
         # Sau Confirm, OrangeHRM redirect sang /leave/viewLeaveEntitlements.
@@ -107,30 +104,13 @@ class AddEntitlementPage(BasePage):
         return "viewLeaveEntitlements" in self.driver.current_url
 
     def is_duplicate_entitlement_error(self):
-        return self.is_element_visible(self.duplicate_error_toast, timeout=3)
+        return self.is_element_visible(
+            self.duplicate_error_toast,
+            timeout=ConfigReader.get_timeout("medium"),
+        )
 
     def get_field_errors(self):
         try:
             return [e.text for e in self.find_elements(self.field_error_messages)]
         except Exception:
             return []
-
-    def select_leave_period_covering(self, target_date_iso: str):
-        """
-        Chọn Leave Period nào có khoảng ngày bao phủ target_date_iso (format YYYY-MM-DD).
-        Tránh phụ thuộc period mặc định có thể đổi giữa các lần load trang.
-        """
-        self.click(self.leave_period_dropdown)
-        options = self.find_elements(self.leave_period_options)
-        from datetime import datetime
-        target = datetime.strptime(target_date_iso, "%Y-%m-%d")
-        for opt in options:
-            # option text dạng "2026-01-01 - 2026-12-31"
-            try:
-                start_str, end_str = [s.strip() for s in opt.text.split("-", 1)[1].split(" - ")]
-            except Exception:
-                continue
-            # parse linh hoạt hơn nếu format khác, cần xác nhận thật
-        # tạm thời: chọn option đầu tiên nếu không parse được, log cảnh báo
-        if options:
-            options[0].click()

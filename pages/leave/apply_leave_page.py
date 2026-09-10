@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime
 from selenium.common.exceptions import TimeoutException
@@ -8,6 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from pages.base_page import BasePage
 from utils.config_reader import ConfigReader
+
+logger = logging.getLogger(__name__)
 
 
 class ApplyLeavePage(BasePage):
@@ -134,7 +137,9 @@ class ApplyLeavePage(BasePage):
             # toast or error. Do not submit a second time: that would submit a
             # freshly reset form and create misleading "Required" errors.
             try:
-                self._wait_for_apply_feedback(timeout=5)
+                self._wait_for_apply_feedback(
+                    timeout=ConfigReader.get_timeout("feedback")
+                )
             except TimeoutException:
                 return False
         return True
@@ -157,7 +162,10 @@ class ApplyLeavePage(BasePage):
         do leftover data từ lần chạy test trước chưa được dọn dẹp, KHÔNG phải lỗi
         thật của lần chạy hiện tại).
         """
-        return self.is_element_visible(self.overlap_warning_header, timeout=2)
+        return self.is_element_visible(
+            self.overlap_warning_header,
+            timeout=ConfigReader.get_timeout("short"),
+        )
 
     def apply_leave_avoiding_overlap(
         self, leave_type: str, date_generator, comment: str = None, max_attempts: int = 5
@@ -176,7 +184,13 @@ class ApplyLeavePage(BasePage):
         for _ in range(max_attempts):
             from_date, to_date = date_generator()
             last_dates = (from_date, to_date)
-            self.apply_leave(leave_type, from_date, to_date, comment=comment)
+            self.apply_leave(
+                leave_type,
+                from_date,
+                to_date,
+                comment=comment,
+                wait_for_feedback=False,
+            )
 
             if self.is_overlap_warning_shown():
                 continue
@@ -189,7 +203,10 @@ class ApplyLeavePage(BasePage):
         )
 
     def is_success_toast_visible(self):
-        return self.is_element_visible(self.toast_success, timeout=5)
+        return self.is_element_visible(
+            self.toast_success,
+            timeout=ConfigReader.get_timeout("feedback"),
+        )
 
     def get_error_messages(self):
         messages = []
@@ -215,19 +232,21 @@ class ApplyLeavePage(BasePage):
 
         try:
             balance_text = self.get_text(self.leave_balance_value)
-            print(f"DEBUG balance_text = '{balance_text}'")
         except Exception as e:
-            print(f"DEBUG không tìm thấy leave_balance_value: {e}")
+            logger.warning("Could not find leave balance value: %s", e)
             return 0.0
 
         match = re.search(r'([\d.]+)', balance_text)
         result = float(match.group(1)) if match else 0.0
-        print(f"DEBUG parsed balance = {result}")
+        logger.debug("Parsed leave balance: %s", result)
         return result
 
     def has_no_leave_balance(self):
         """True nếu form Apply Leave báo không có leave type nào còn balance."""
-        return self.is_element_visible(self.no_leave_balance_message, timeout=3)
+        return self.is_element_visible(
+            self.no_leave_balance_message,
+            timeout=ConfigReader.get_timeout("medium"),
+        )
 
     def has_leave_type_option(self, leave_type: str) -> bool:
         """

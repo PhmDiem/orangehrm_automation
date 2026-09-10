@@ -4,6 +4,13 @@
     "browser": "chrome",
     "timeout": {
         "implicit_wait": 10,
-        "explicit_wait": 30
+        "explicit_wait": 30,
+        "short": 2,
+        "medium": 3,
+        "feedback": 5,
+        "page_load": 15
+    },
+    "test_data": {
+        "default_user_password": "Test@123"
     }
 }

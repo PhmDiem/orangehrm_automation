@@ -90,53 +90,29 @@ class TestEmployeeManagement:
             ), "Employee ID was not auto-generated"
 
     @pytest.mark.without_name
-    @allure.title(
-        "Create employee with missing first name shows required error"
-    )
-    def test_create_employee_missing_first_name(self):
+    @pytest.mark.parametrize("missing_field", ["first_name", "last_name"])
+    @allure.title("Create employee with missing {missing_field}")
+    def test_create_employee_missing_name(self, missing_field):
+        first_name = TestData.generate_employee_name("Auto")
         last_name = TestData.generate_employee_name("Tester")
 
         with allure.step("Navigate to PIM > Add Employee"):
             self._navigate_to_pim()
             self.pim_page.navigate_to_add_employee()
 
-        with allure.step("Leave First Name empty and enter Last Name only"):
+        with allure.step(f"Leave {missing_field} empty and submit the form"):
             self.create_employee_page.wait_for_loading_to_disappear()
-            self.create_employee_page.enter_last_name(last_name)
+            if missing_field == "first_name":
+                self.create_employee_page.enter_last_name(last_name)
+            else:
+                self.create_employee_page.enter_first_name(first_name)
             self.create_employee_page.click_save()
 
-        with allure.step("Verify First Name required error is displayed"):
-            assert (
-                self.create_employee_page.is_first_name_error_displayed()
-            ), "Required error was not displayed for First Name"
-
-        with allure.step(
-            "Verify page did not navigate away (employee not created)"
-        ):
-            assert (
-                not self.employee_page.is_personal_details_displayed_immediate()
-            ), "Employee was created despite missing First Name"
-
-    @pytest.mark.without_name
-    @allure.title(
-        "Create employee with missing last name shows required error"
-    )
-    def test_create_employee_missing_last_name(self):
-        first_name = TestData.generate_employee_name("Auto")
-
-        with allure.step("Navigate to PIM > Add Employee"):
-            self._navigate_to_pim()
-            self.pim_page.navigate_to_add_employee()
-
-        with allure.step("Leave Last Name empty and enter First Name only"):
-            self.create_employee_page.wait_for_loading_to_disappear()
-            self.create_employee_page.enter_first_name(first_name)
-            self.create_employee_page.click_save()
-
-        with allure.step("Verify Last Name required error is displayed"):
-            assert (
-                self.create_employee_page.is_last_name_error_displayed()
-            ), "Required error was not displayed for Last Name"
+        with allure.step(f"Verify {missing_field} required error is displayed"):
+            if missing_field == "first_name":
+                assert self.create_employee_page.is_first_name_error_displayed()
+            else:
+                assert self.create_employee_page.is_last_name_error_displayed()
 
         with allure.step(
             "Verify page did not navigate away (employee not created)"

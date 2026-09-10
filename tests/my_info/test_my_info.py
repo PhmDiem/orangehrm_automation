@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 
 from pages.dashboard_page import DashboardPage
 from pages.my_info.my_info_page import MyInfoPage
+from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
 
@@ -35,20 +36,20 @@ class TestMyInfo:
 
     @allure.title("TC03 - Update Contact Details")
     def test_update_contact_details(self):
-        mobile = "0900000001"
+        contact_data = ConfigReader.get_my_info_data("contact")
 
         self.my_info_page.open_contact_details()
         self.my_info_page.send_keys(
             (By.XPATH, "//label[normalize-space()='Street 1']/following::input[1]"),
-            "Automation Street 1",
+            contact_data["street_1"],
         )
         self.my_info_page.send_keys(
             (By.XPATH, "//label[normalize-space()='City']/following::input[1]"),
-            "Ho Chi Minh City",
+            contact_data["city"],
         )
         self.my_info_page.send_keys(
             (By.XPATH, "//label[normalize-space()='Mobile']/following::input[1]"),
-            mobile,
+            contact_data["mobile"],
         )
         self.my_info_page.save()
 
@@ -57,9 +58,14 @@ class TestMyInfo:
     @allure.title("TC04 - Add Emergency Contact")
     def test_add_emergency_contact(self):
         name = TestData.generate_employee_name("Emergency")
+        emergency_data = ConfigReader.get_my_info_data("emergency_contact")
         self.my_info_page.open_emergency_contacts()
         self.my_info_page.add_emergency_contact()
-        self.my_info_page.enter_emergency_contact(name, "Sibling", "0900000002")
+        self.my_info_page.enter_emergency_contact(
+            name,
+            emergency_data["relationship"],
+            emergency_data["mobile"],
+        )
         self.my_info_page.save()
 
         assert self.my_info_page.is_saved(), "Emergency Contact save was not confirmed"

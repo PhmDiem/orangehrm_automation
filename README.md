@@ -1,48 +1,77 @@
-# OrangeHRM Automation Testing
+# OrangeHRM UI Automation
 
-Dự án Automation Testing cho hệ thống **OrangeHRM** sử dụng Python + Selenium WebDriver.
+UI test automation for the public OrangeHRM demo application using Python,
+Selenium WebDriver, Pytest, and Allure.
 
-## Mục tiêu
+## Scope
 
-* Áp dụng **Page Object Model (POM)**
-* Tích hợp **PyTest + Allure Report**
-* Kiểm tra Database (MySQL)
-* Testing API với Auth Token
+The project currently covers browser-based OrangeHRM workflows, including:
+
+- Login and logout
+- User management
+- Employee management
+- Leave types, leave requests, and leave approval/rejection
+- Personal information and emergency contacts
+
+The project does not currently contain MySQL/database verification or separate
+API test implementations.
 
 ## Tech Stack
 
-* Python
-* Selenium WebDriver
-* PyTest + Allure Report
-* Page Object Model (POM)
-* MySQL (Database verification)
-* Requests (API Testing)
+- Python
+- Selenium WebDriver
+- Pytest
+- Allure Pytest integration
+- Page Object Model (POM)
 
-## Cấu trúc Project
+## Project Structure
 
-* `pages/` — Chứa Page Objects
-* `tests/` — Chứa test cases
-* `data/` — Dữ liệu test (CSV...)
-* `utils/` — Helper functions
-* `screenshots/` — Ảnh chụp lỗi
-* `allure-results/` — Dữ liệu kết quả để tạo báo cáo Allure
-* `tests/conftest.py` — Fixtures
+- `pages/` - Page Object classes
+- `tests/` - Test cases and shared fixtures
+- `data/` - JSON test data
+- `utils/` - Configuration, browser, test data, and reporting helpers
+- `config/` - Runtime configuration
+- `screenshots/` - Failure screenshots, generated locally
+- `allure-results/` - Raw Allure results, generated locally
+- `reports/` - Generated Allure reports, generated locally
 
-## How to Run
+## Installation and Usage
+
+Install the Python dependencies:
 
 ```bash
 pip install -r requirements.txt
+```
 
-# Chạy test
+Run all tests directly with Pytest:
+
+```bash
 pytest tests/
+```
 
-# Xem báo cáo
+Run the provided Windows script to generate and open a timestamped Allure
+report. The report is generated for both successful and failed test runs:
+
+```bat
+run_tests.bat tests/
+```
+
+To open an existing report:
+
+```bat
+view_report.bat
+```
+
+You can also serve the raw results manually:
+
+```bash
 allure serve allure-results
 ```
 
 ## Configuration
 
-Configuration is loaded from `config/config.json` and can be overridden with environment variables:
+Default settings are stored in `config/config.json` and can be overridden with
+environment variables:
 
 * `ORANGEHRM_BASE_URL`
 * `ORANGEHRM_BROWSER`
@@ -51,6 +80,11 @@ Configuration is loaded from `config/config.json` and can be overridden with env
 * `ORANGEHRM_ADMIN_PASSWORD`
 * `ORANGEHRM_EXPLICIT_WAIT_TIMEOUT`
 * `ORANGEHRM_IMPLICIT_WAIT_TIMEOUT`
+* `ORANGEHRM_TEST_USER_PASSWORD`
+* `ORANGEHRM_SHORT_TIMEOUT`
+* `ORANGEHRM_MEDIUM_TIMEOUT`
+* `ORANGEHRM_FEEDBACK_TIMEOUT`
+* `ORANGEHRM_PAGE_LOAD_TIMEOUT`
 
 PowerShell example:
 
@@ -60,3 +94,7 @@ $env:ORANGEHRM_ADMIN_PASSWORD = "admin123"
 
 pytest -m login
 ```
+
+The public OrangeHRM demo uses the documented demo credentials by default.
+For another environment, provide credentials through environment variables
+instead of changing the JSON test data.

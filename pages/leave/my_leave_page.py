@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class MyLeavePage(BasePage):
@@ -68,7 +69,10 @@ class MyLeavePage(BasePage):
         self.click(cancel_button)
 
         confirm_button = (By.XPATH, "//button[contains(normalize-space(.), 'Yes, Confirm')]")
-        if self.is_element_visible(confirm_button, timeout=3):
+        if self.is_element_visible(
+            confirm_button,
+            timeout=ConfigReader.get_timeout("medium"),
+        ):
             self.click(confirm_button)
 
         # OrangeHRM keeps the row and changes its status to Cancelled.

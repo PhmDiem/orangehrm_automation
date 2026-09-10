@@ -25,6 +25,7 @@ mkdir %RESULTS_DIR%
 
 echo [2/4] Chay pytest %*...
 pytest %* --alluredir=%RESULTS_DIR% -v
+SET PYTEST_EXIT_CODE=%ERRORLEVEL%
 echo.
 
 echo [3/4] Copy history tu lan chay truoc...
@@ -45,9 +46,13 @@ IF DEFINED LATEST (
 
 echo [4/4] Generate Allure report...
 allure generate %RESULTS_DIR% -o %REPORT_DIR% --clean
+SET ALLURE_EXIT_CODE=%ERRORLEVEL%
 echo.
 echo ============================================
 echo  DONE! Report luu tai: %REPORT_DIR%
 echo ============================================
 echo.
 allure open %REPORT_DIR%
+
+IF NOT "%PYTEST_EXIT_CODE%"=="0" EXIT /b %PYTEST_EXIT_CODE%
+EXIT /b %ALLURE_EXIT_CODE%

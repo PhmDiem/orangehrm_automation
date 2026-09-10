@@ -1,4 +1,3 @@
 selenium
 pytest
 allure-pytest
-requests

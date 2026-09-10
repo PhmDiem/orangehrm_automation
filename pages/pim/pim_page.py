@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class PIMPage(BasePage):
@@ -96,7 +97,10 @@ class PIMPage(BasePage):
         self.click(self.search_btn)
 
     def is_no_records_found_displayed(self):
-        return self.is_element_visible(self.no_records_text, timeout=5)
+        return self.is_element_visible(
+            self.no_records_text,
+            timeout=ConfigReader.get_timeout("feedback"),
+        )
 
     def get_first_row_text(self):
         rows = self.find_elements(self.employee_rows)

@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class MyInfoPage(BasePage):
@@ -69,7 +70,10 @@ class MyInfoPage(BasePage):
         self.click_via_js(locator)
 
     def select_blood_type_if_available(self, blood_type):
-        if not self.is_element_visible(self.blood_type, timeout=2):
+        if not self.is_element_visible(
+            self.blood_type,
+            timeout=ConfigReader.get_timeout("short"),
+        ):
             return False
         self.click(self.blood_type)
         self.click_dropdown_option(self.blood_type_options, expected_text=blood_type)
@@ -79,7 +83,10 @@ class MyInfoPage(BasePage):
         self.click(self.save_buttons)
 
     def is_saved(self):
-        return self.is_element_visible(self.success_toast, timeout=5)
+        return self.is_element_visible(
+            self.success_toast,
+            timeout=ConfigReader.get_timeout("feedback"),
+        )
 
     def add_emergency_contact(self):
         self.click(self.emergency_add_button)
@@ -93,4 +100,7 @@ class MyInfoPage(BasePage):
         return [row.text for row in self.find_elements(self.emergency_rows)]
 
     def has_required_error(self):
-        return self.is_element_visible(self.required_error, timeout=3)
+        return self.is_element_visible(
+            self.required_error,
+            timeout=ConfigReader.get_timeout("medium"),
+        )

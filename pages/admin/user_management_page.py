@@ -41,7 +41,7 @@ class UserManagementPage(BasePage):
         self.no_records_msg = (By.XPATH, '//span[text()="No Records Found"]')
         self.confirm_delete_btn = (
             By.XPATH,
-            '//button[text()=" Yes, Delete "]',
+            '//button[normalize-space()="Yes, Delete"]',
         )
         self.bulk_delete_btn = (
             By.XPATH,

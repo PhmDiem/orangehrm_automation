@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class LoginPage(BasePage):
@@ -36,7 +37,10 @@ class LoginPage(BasePage):
 
     def login_and_wait(self, username, password, dashboard_locator):
         self.login(username, password)
-        if self.is_element_visible(self.Invalid_error_message, timeout=3):
+        if self.is_element_visible(
+            self.Invalid_error_message,
+            timeout=ConfigReader.get_timeout("medium"),
+        ):
             raise AssertionError(
                 f"Login failed for '{username}': {self.get_error_message()}"
             )

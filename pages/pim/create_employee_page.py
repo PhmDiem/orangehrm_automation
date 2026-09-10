@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,9 @@ class CreateEmployee(BasePage):
             self.click_save()
 
             # Duplicate?
-            if self.is_employee_id_duplicate_error_displayed(timeout=3):
+            if self.is_employee_id_duplicate_error_displayed(
+                timeout=ConfigReader.get_timeout("medium")
+            ):
                 logger.warning("Employee ID %s is duplicated", employee_id)
 
                 if attempt < max_retries - 1:
@@ -107,7 +110,9 @@ class CreateEmployee(BasePage):
             # Save thành công
             logger.info("Employee %s created successfully", employee_id)
 
-            WebDriverWait(self.driver, 15).until(
+            WebDriverWait(
+                self.driver, ConfigReader.get_timeout("page_load")
+            ).until(
                 lambda d: "addEmployee" not in d.current_url
             )
 

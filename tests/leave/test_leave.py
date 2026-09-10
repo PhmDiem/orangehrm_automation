@@ -8,10 +8,11 @@ from pages.leave.apply_leave_page import ApplyLeavePage
 from pages.leave.my_leave_page import MyLeavePage
 from pages.leave.leave_list_page import LeaveListPage
 from pages.login_page import LoginPage
+from utils.config_reader import ConfigReader
 
 
 @pytest.mark.leave
-class TestEmployeeManagement:
+class TestLeaveTypes:
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -197,7 +198,7 @@ class TestManageLeave:
         employee_login = LoginPage(self.driver)
         employee_login.logout()
         employee_login.login(
-            pending_leave["employee_username"], TestData.DEFAULT_PASSWORD
+            pending_leave["employee_username"], ConfigReader.get_test_user_password()
         )
         employee_dashboard = DashboardPage(self.driver)
         employee_dashboard.navigate_to_leave_page()

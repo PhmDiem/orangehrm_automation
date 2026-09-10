@@ -1,7 +1,10 @@
 import os
+import logging
 from datetime import datetime
 
 import allure
+
+logger = logging.getLogger(__name__)
 
 
 def attach_failure_screenshot(driver, test_name):
@@ -26,7 +29,7 @@ def attach_failure_screenshot(driver, test_name):
             attachment_type=allure.attachment_type.PNG,
         )
 
-        print(f"Screenshot saved: {file_path}")
+        logger.info("Screenshot saved: %s", file_path)
 
     except Exception as exc:
-        print(f"Failed to capture screenshot: {exc}")
+        logger.exception("Failed to capture screenshot: %s", exc)

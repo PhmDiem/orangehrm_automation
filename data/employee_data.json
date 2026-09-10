@@ -4,7 +4,7 @@
     "firstName": "ZZZNotExist"
   },
   "updateProfile": {
-    "gender": "Famale",
+    "gender": "Female",
     "dob": "2003-23-10",
     "bloodType": "O+"
   }

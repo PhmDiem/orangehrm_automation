@@ -77,13 +77,19 @@ class EmployeePage(BasePage):
         )
 
     def is_blood_type_available(self):
-        return self.is_element_visible(self.blood_type_dropdown, timeout=2)
+        return self.is_element_visible(
+            self.blood_type_dropdown,
+            timeout=ConfigReader.get_timeout("short"),
+        )
 
     def click_save(self):
         self.click(self.save_btn)
 
     def is_update_success_displayed(self):
-        return self.is_element_visible(self.success_toast, timeout=5)
+        return self.is_element_visible(
+            self.success_toast,
+            timeout=ConfigReader.get_timeout("feedback"),
+        )
 
     def get_dob_value(self):
         return self.find_element(self.dob_input).get_attribute("value")

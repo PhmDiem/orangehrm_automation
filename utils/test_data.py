@@ -8,7 +8,6 @@ class TestData:
 
     DEFAULT_ROLE = "ESS"
     DEFAULT_STATUS = "Enabled"
-    DEFAULT_PASSWORD = "Test@123"
 
     @staticmethod
     def generate_username(prefix="test_user"):
@@ -22,7 +21,7 @@ class TestData:
         )
         return f"{prefix}_{suffix}"
 
-        # ==== PIM ====
+    # ==== PIM ====
 
     DEFAULT_GENDER = "Male"
     DEFAULT_BLOOD_TYPE = "O+"
