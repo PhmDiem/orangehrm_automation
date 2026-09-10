@@ -47,17 +47,25 @@ class MyLeavePage(BasePage):
                 return row.text
         return None
 
-    def cancel_leave_by_marker(self, marker: str):
-        """Cancel a pending request created by the current test."""
+    def cancel_leave_by_marker(self, marker: str) -> bool:
+        """Cancel a request by marker when its current status allows cancellation.
+
+        Approved/scheduled and pending requests expose a row-level ``Cancel``
+        action. Rejected or already-cancelled requests do not; that is an
+        expected state during teardown rather than an automation failure.
+        """
         row_locator = (
             By.XPATH,
             f"//div[@class='oxd-table-body']//div[@role='row'][contains(., '{marker}')]",
         )
-        row = self.find_element(row_locator)
-        cancel_button = row.find_element(
-            By.XPATH, ".//button[contains(normalize-space(.), 'Cancel')]"
+        cancel_button = (
+            By.XPATH,
+            f"{row_locator[1]}//button[normalize-space()='Cancel']",
         )
-        cancel_button.click()
+        if not self.driver.find_elements(*cancel_button):
+            return False
+
+        self.click(cancel_button)
 
         confirm_button = (By.XPATH, "//button[contains(normalize-space(.), 'Yes, Confirm')]")
         if self.is_element_visible(confirm_button, timeout=3):
@@ -70,3 +78,4 @@ class MyLeavePage(BasePage):
                 for row in driver.find_elements(*row_locator)
             )
         )
+        return True

@@ -66,10 +66,27 @@ class TestApplyLeave:
         self.leave_page.navigate_to_apply_leave()
         assert self.apply_leave_page.is_page_displayed()
 
+    @pytest.fixture
+    def created_leave_markers(self):
+        """Cancel requests registered by a test, even when an assertion fails."""
+        markers = []
+        yield markers
+
+        if not markers:
+            return
+
+        self.dashboard_page.navigate_to_leave_page()
+        self.leave_page.navigate_to_my_leave()
+        for marker in markers:
+            if self.my_leave_page.get_row_by_marker(marker) is not None:
+                self.my_leave_page.cancel_leave_by_marker(marker)
+
     @pytest.mark.apply_leave_valid
     @allure.story("TC02 - Apply leave hợp lệ")
     @allure.severity(allure.severity_level.CRITICAL)
-    def test_apply_valid_leave_status_pending(self, leave_data, ensure_leave_entitlement):
+    def test_apply_valid_leave_status_pending(
+        self, leave_data, ensure_leave_entitlement, created_leave_markers
+    ):
         with allure.step("Navigate to Apply Leave"):
             self._navigate_to_apply_leave()
 
@@ -85,6 +102,7 @@ class TestApplyLeave:
                 date_generator=TestData.generate_future_leave_dates,
                 comment=marker,
             )
+            created_leave_markers.append(marker)
             errors = self.apply_leave_page.get_error_messages()
             assert not errors, f"Apply leave failed with validation errors: {errors}"
 
@@ -94,7 +112,6 @@ class TestApplyLeave:
             row_text = self.my_leave_page.get_row_by_marker(marker)
             assert row_text is not None, f"Không tìm thấy request với marker '{marker}' trong My Leave"
             assert "pending" in row_text.lower(), f"Expected Pending status, got: {row_text}"
-            self.my_leave_page.cancel_leave_by_marker(marker)
 
     @allure.story("TC03 - Apply leave ngày quá khứ")
     def test_apply_leave_past_date_shows_error(self, leave_data, ensure_leave_entitlement):

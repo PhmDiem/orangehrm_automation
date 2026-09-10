@@ -1,9 +1,13 @@
 import re
 from datetime import datetime
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class ApplyLeavePage(BasePage):
@@ -126,9 +130,25 @@ class ApplyLeavePage(BasePage):
 
         self.click(self.apply_btn)
         if wait_for_feedback:
-            self.wait_for_any_visible(
-                self.toast_success, self.error_messages, self.overlap_warning_header
+            # The demo application can persist a request without showing a
+            # toast or error. Do not submit a second time: that would submit a
+            # freshly reset form and create misleading "Required" errors.
+            try:
+                self._wait_for_apply_feedback(timeout=5)
+            except TimeoutException:
+                return False
+        return True
+
+    def _wait_for_apply_feedback(self, timeout=None):
+        """Wait for one of the mutually exclusive Apply Leave outcomes."""
+        wait_time = timeout or ConfigReader.get_explicit_wait()
+        return WebDriverWait(self.driver, wait_time).until(
+            EC.any_of(
+                EC.visibility_of_element_located(self.toast_success),
+                EC.visibility_of_element_located(self.error_messages),
+                EC.visibility_of_element_located(self.overlap_warning_header),
             )
+        )
 
     def is_overlap_warning_shown(self) -> bool:
         """

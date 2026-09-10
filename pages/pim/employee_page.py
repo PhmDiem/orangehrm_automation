@@ -1,7 +1,9 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class EmployeePage(BasePage):
@@ -85,3 +87,15 @@ class EmployeePage(BasePage):
 
     def get_dob_value(self):
         return self.find_element(self.dob_input).get_attribute("value")
+
+    def wait_for_dob_value(self, expected_value, timeout=None):
+        """Wait until the SPA has rendered the saved date back into the field."""
+        wait_time = timeout or ConfigReader.get_explicit_wait()
+        return WebDriverWait(self.driver, wait_time).until(
+            lambda driver: (
+                value
+                if (value := driver.find_element(*self.dob_input).get_attribute("value"))
+                == expected_value
+                else False
+            )
+        )

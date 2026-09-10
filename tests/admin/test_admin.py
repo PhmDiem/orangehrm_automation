@@ -272,6 +272,7 @@ class TestUserManagement:
 
         with allure.step("Verify deleted user is no longer found"):
             assert self.user_management_page.is_no_records_found_displayed()
+            created_users.remove(username)
 
     @pytest.mark.bulk_delete_users
     @allure.title("Bulk delete users")
@@ -312,3 +313,7 @@ class TestUserManagement:
                 assert not self.user_management_page.is_user_displayed(
                     username
                 ), f"User '{username}' is still displayed"
+
+        # The users were deleted successfully above; do not make the
+        # finalizer navigate and attempt to delete them a second time.
+        created_users.clear()

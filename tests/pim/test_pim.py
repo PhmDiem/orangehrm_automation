@@ -101,6 +101,7 @@ class TestEmployeeManagement:
             self.pim_page.navigate_to_add_employee()
 
         with allure.step("Leave First Name empty and enter Last Name only"):
+            self.create_employee_page.wait_for_loading_to_disappear()
             self.create_employee_page.enter_last_name(last_name)
             self.create_employee_page.click_save()
 
@@ -250,8 +251,9 @@ class TestEmployeeManagement:
             assert self.employee_page.is_personal_details_displayed()
 
         with allure.step("Update gender, DOB, and blood type"):
+            dob = update_data["dob"]
             self.employee_page.select_gender(update_data["gender"])
-            self.employee_page.enter_dob(update_data["dob"])
+            self.employee_page.enter_dob(dob)
             if self.employee_page.is_blood_type_available():
                 self.employee_page.select_blood_type(update_data["bloodType"])
             self.employee_page.click_save()
@@ -263,7 +265,7 @@ class TestEmployeeManagement:
 
         with allure.step("Verify DOB was saved correctly"):
             assert (
-                self.employee_page.get_dob_value() == update_data["dob"]
+                self.employee_page.wait_for_dob_value(dob) == dob
             ), "DOB was not updated correctly"
 
     @pytest.mark.delete_employee

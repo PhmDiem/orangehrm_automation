@@ -40,7 +40,7 @@ def driver():
             )
 
         driver.implicitly_wait(ConfigReader.get_implicit_wait())
-        driver.set_page_load_timeout(ConfigReader.get_explicit_wait())
+        driver.set_page_load_timeout(30)
 
         if not ConfigReader.is_headless():
             driver.maximize_window()
@@ -169,6 +169,10 @@ def pending_leave(driver, login, leave_data):
     )
 
     dashboard_page.navigate_to_leave_page()
+    assert leave_page.is_leave_page_displayed(), (
+        "Leave page did not finish loading after creating the ESS user"
+    )
+    leave_page.wait_for_loading_to_disappear()
     leave_page.navigate_to_add_entitlement()
     entitlement_page = AddEntitlementPage(driver)
     assert entitlement_page.is_page_displayed()
@@ -222,3 +226,55 @@ def pending_leave(driver, login, leave_data):
         "employee_name": employee_name,
         "employee_username": employee_username,
     }
+
+    cleanup_errors = []
+
+    try:
+        login_page = LoginPage(driver)
+        login_page.logout()
+        login_page.login_and_wait(
+            employee_username,
+            employee_password,
+            DashboardPage(driver).leave_btn,
+        )
+        employee_dashboard = DashboardPage(driver)
+        employee_dashboard.navigate_to_leave_page()
+        employee_leave_page = LeavePage(driver)
+        employee_leave_page.navigate_to_my_leave()
+        employee_my_leave_page = MyLeavePage(driver)
+        if employee_my_leave_page.get_row_by_marker(marker) is not None:
+            employee_my_leave_page.cancel_leave_by_marker(marker)
+    except Exception as error:
+        # The generated employee is deleted below, which also removes its leave data.
+        logger.warning("Could not cancel leave request '%s': %s", marker, error)
+
+    try:
+        login_page = LoginPage(driver)
+        login_page.logout()
+        admin_user = ConfigReader.get_user("admin")
+        login_page.login(admin_user["username"], admin_user["password"])
+
+        dashboard_page = DashboardPage(driver)
+        dashboard_page.navigate_to_admin_page()
+        user_management_page = UserManagementPage(driver)
+        user_management_page.enter_username_search(employee_username)
+        user_management_page.click_search_btn()
+        if user_management_page.is_user_displayed(employee_username):
+            user_management_page.delete_user_row(employee_username)
+            user_management_page.confirm_delete()
+            user_management_page.wait_for_loading_to_disappear()
+
+        dashboard_page.navigate_to_pim_page()
+        pim_page = PIMPage(driver)
+        pim_page.search_by_employee_name(employee_name)
+        if not pim_page.is_no_records_found_displayed():
+            pim_page.delete_first_row_via_icon()
+            pim_page.confirm_delete()
+            pim_page.wait_for_loading_to_disappear()
+    except Exception as error:
+        cleanup_errors.append(error)
+
+    if cleanup_errors:
+        raise AssertionError(
+            f"Failed to clean up leave test resources for '{employee_username}'"
+        ) from cleanup_errors[0]
