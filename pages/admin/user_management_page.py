@@ -1,7 +1,9 @@
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 
 from pages.base_page import BasePage
+from utils.config_reader import ConfigReader
 
 
 class UserManagementPage(BasePage):
@@ -39,6 +41,7 @@ class UserManagementPage(BasePage):
             '//label[text()="Username"]/following::input[1]',
         )
         self.no_records_msg = (By.XPATH, '//span[text()="No Records Found"]')
+        self.table_loader = (By.CSS_SELECTOR, ".oxd-table-loader")
         self.confirm_delete_btn = (
             By.XPATH,
             '//button[normalize-space()="Yes, Delete"]',
@@ -85,6 +88,13 @@ class UserManagementPage(BasePage):
 
     def click_search_btn(self):
         self.click(self.search_btn)
+        self.wait_for_search_results()
+
+    def wait_for_search_results(self):
+        return self.wait_for_table_result(
+            self.result_rows,
+            self.no_records_msg,
+        )
 
     def get_user_row_text(self, username):
         def find_matching_row(driver):
@@ -104,7 +114,16 @@ class UserManagementPage(BasePage):
         self.send_keys(self.input_username_search, username)
 
     def is_no_records_found_displayed(self):
-        return self.is_displayed(self.no_records_msg)
+        return self.is_element_visible(
+            self.no_records_msg,
+            timeout=ConfigReader.get_timeout("feedback"),
+        )
+
+    def wait_for_no_records_found(self):
+        return self.wait_for_empty_table(
+            self.result_rows,
+            self.no_records_msg,
+        )
 
     def click_user_row(self, username):
         row_link = (
@@ -132,7 +151,7 @@ class UserManagementPage(BasePage):
         self.click(delete_icon)
 
     def confirm_delete(self):
-        self.click(self.confirm_delete_btn)
+        self.confirm_delete_dialog(self.confirm_delete_btn)
 
     def select_checkbox(self, username):
         checkbox_locator = (
@@ -162,7 +181,26 @@ class UserManagementPage(BasePage):
             f'//div[@role="row"]'
             f'[.//*[normalize-space(text())="{username}"]]',
         )
-        return self.is_element_visible(user_row)
+        return any(
+            element.is_displayed()
+            for element in self.driver.find_elements(*user_row)
+        )
+
+    def wait_for_user_absent(self, username):
+        self.wait_for_loading_to_disappear()
+        user_row = (
+            By.XPATH,
+            f'//div[@role="row"]'
+            f'[.//*[normalize-space(text())="{username}"]]'
+        )
+        return WebDriverWait(
+            self.driver, ConfigReader.get_timeout("feedback")
+        ).until(
+            lambda driver: not any(
+                element.is_displayed()
+                for element in driver.find_elements(*user_row)
+            )
+        )
 
     def get_usernames_by_prefix(self, prefix):
         username_cells = (

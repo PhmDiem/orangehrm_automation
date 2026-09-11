@@ -28,6 +28,11 @@ class ApplyLeavePage(BasePage):
         self.error_messages = (By.CSS_SELECTOR, ".oxd-input-field-error-message")
         self.toast_content = (By.CSS_SELECTOR, ".oxd-toast-content")
         self.toast_success = (By.CSS_SELECTOR, ".oxd-toast--success")
+        self.success_message = (
+            By.CSS_SELECTOR,
+            ".oxd-toast-content--success .oxd-toast-message",
+        )
+        self.form_loader = (By.CSS_SELECTOR, ".oxd-form-loader")
         self.no_leave_balance_message = (
             By.XPATH, "//p[text()='No Leave Types with Leave Balance']"
         )
@@ -132,6 +137,7 @@ class ApplyLeavePage(BasePage):
             self.send_keys(self.comments_input, comment)
 
         self.click(self.apply_btn)
+        self.wait_for_loading_to_disappear()
         if wait_for_feedback:
             # The demo application can persist a request without showing a
             # toast or error. Do not submit a second time: that would submit a
@@ -141,7 +147,10 @@ class ApplyLeavePage(BasePage):
                     timeout=ConfigReader.get_timeout("feedback")
                 )
             except TimeoutException:
-                return False
+                logger.warning(
+                    "Apply Leave completed without visible feedback; "
+                    "the public demo may have dismissed the toast already."
+                )
         return True
 
     def _wait_for_apply_feedback(self, timeout=None):
@@ -184,16 +193,26 @@ class ApplyLeavePage(BasePage):
         for _ in range(max_attempts):
             from_date, to_date = date_generator()
             last_dates = (from_date, to_date)
-            self.apply_leave(
+            feedback_received = self.apply_leave(
                 leave_type,
                 from_date,
                 to_date,
                 comment=comment,
-                wait_for_feedback=False,
+                wait_for_feedback=True,
             )
 
             if self.is_overlap_warning_shown():
                 continue
+
+            errors = self.get_error_messages()
+            if errors:
+                raise AssertionError(
+                    f"Apply Leave returned validation errors: {errors}"
+                )
+            if not feedback_received:
+                raise AssertionError(
+                    "Apply Leave did not produce a success or validation outcome"
+                )
 
             return from_date, to_date
 
@@ -208,22 +227,30 @@ class ApplyLeavePage(BasePage):
             timeout=ConfigReader.get_timeout("feedback"),
         )
 
+    def wait_for_success_toast(self):
+        return WebDriverWait(
+            self.driver, ConfigReader.get_timeout("feedback")
+        ).until(
+            lambda driver: any(
+                element.is_displayed()
+                and "successfully saved" in element.text.casefold()
+                for element in driver.find_elements(*self.success_message)
+            )
+        )
+
     def get_error_messages(self):
         messages = []
         for locator in (self.error_messages, self.toast_content):
-            try:
-                messages.extend(
-                    element.text.strip()
-                    for element in self.driver.find_elements(*locator)
-                    if element.is_displayed()
-                    and element.text.strip()
-                    and not (
-                        locator == self.toast_content
-                        and "success" in (element.get_attribute("class") or "").lower()
-                    )
+            messages.extend(
+                element.text.strip()
+                for element in self.driver.find_elements(*locator)
+                if element.is_displayed()
+                and element.text.strip()
+                and not (
+                    locator == self.toast_content
+                    and "success" in (element.get_attribute("class") or "").lower()
                 )
-            except Exception:
-                continue
+            )
         return list(dict.fromkeys(messages))
 
     def get_current_balance(self, leave_type: str) -> float:

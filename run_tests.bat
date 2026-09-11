@@ -1,13 +1,13 @@
 @echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 REM =============================================
-REM  Cach dung:
-REM  .\run_tests.bat tests/                      → chay tat ca
-REM  .\run_tests.bat -m login tests/             → chay theo marker
-REM  .\run_tests.bat -m "login and smoke" tests/ → nhieu marker
-REM  .\run_tests.bat -k test_login_success tests/→ chay 1 testcase
-REM  .\run_tests.bat tests/test_login.py         → chay 1 file
-REM  .\run_tests.bat tests/test_login.py::ten_ham→ chay 1 ham
+REM  Usage:
+REM  .\run_tests.bat tests/                        -> run all tests
+REM  .\run_tests.bat -m login tests/               -> run by marker
+REM  .\run_tests.bat -m "login and smoke" tests/  -> run by markers
+REM  .\run_tests.bat -k test_login_success tests/  -> run one test
+REM  .\run_tests.bat tests/test_login.py           -> run one file
+REM  .\run_tests.bat tests/test_login.py::name     -> run one test
 REM =============================================
 
 SET RESULTS_DIR=allure-results
@@ -19,16 +19,16 @@ SET TIMESTAMP=%D%_%T%
 SET REPORT_DIR=%REPORTS_DIR%\%TIMESTAMP%
 
 echo.
-echo [1/4] Xoa allure-results cu...
+echo [1/4] Removing previous allure-results...
 IF EXIST %RESULTS_DIR% rmdir /s /q %RESULTS_DIR%
 mkdir %RESULTS_DIR%
 
-echo [2/4] Chay pytest %*...
+echo [2/4] Running pytest %*...
 pytest %* --alluredir=%RESULTS_DIR% -v
 SET PYTEST_EXIT_CODE=%ERRORLEVEL%
 echo.
 
-echo [3/4] Copy history tu lan chay truoc...
+echo [3/4] Copying history from the previous run...
 SET LATEST=
 FOR /F "delims=" %%I IN ('dir /b /ad /o-d %REPORTS_DIR% 2^>nul') DO (
     IF NOT DEFINED LATEST SET LATEST=%%I
@@ -38,18 +38,18 @@ IF DEFINED LATEST (
         echo    Found history: %LATEST%
         xcopy /e /i /q %REPORTS_DIR%\%LATEST%\history %RESULTS_DIR%\history
     ) ELSE (
-        echo    Day la lan chay dau tien, chua co history.
+        echo    First run; no history found.
     )
 ) ELSE (
-    echo    Chua co report nao truoc do.
+    echo    No previous report found.
 )
 
-echo [4/4] Generate Allure report...
+echo [4/4] Generating Allure report...
 allure generate %RESULTS_DIR% -o %REPORT_DIR% --clean
 SET ALLURE_EXIT_CODE=%ERRORLEVEL%
 echo.
 echo ============================================
-echo  DONE! Report luu tai: %REPORT_DIR%
+echo  DONE! Report saved to: %REPORT_DIR%
 echo ============================================
 echo.
 allure open %REPORT_DIR%

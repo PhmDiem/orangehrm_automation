@@ -22,6 +22,7 @@ class BasePage:
         self.wait = WebDriverWait(
             self.driver, ConfigReader.get_explicit_wait()
         )
+        self._last_submit_completed = False
 
     def find_element(self, locator):
         return self.wait.until(EC.presence_of_element_located(locator))
@@ -136,11 +137,16 @@ class BasePage:
 
     def wait_for_loading_to_disappear(self, timeout=None):
         wait_time = timeout or ConfigReader.get_explicit_wait()
+        loader_locator = (
+            By.CSS_SELECTOR,
+            ".oxd-loading-spinner, .oxd-form-loader, .oxd-table-loader",
+        )
 
         try:
             WebDriverWait(self.driver, wait_time).until(
-                EC.invisibility_of_element_located(
-                    (By.CLASS_NAME, "oxd-loading-spinner")
+                lambda driver: all(
+                    not loader.is_displayed()
+                    for loader in driver.find_elements(*loader_locator)
                 )
             )
         except TimeoutException:
@@ -151,6 +157,37 @@ class BasePage:
             )
             raise
 
+    def wait_for_table_result(self, row_locator, empty_locator, timeout=None):
+        """Wait until a table has rows or displays its empty-state message."""
+        self.wait_for_loading_to_disappear()
+        wait_time = timeout or ConfigReader.get_timeout("feedback")
+
+        return WebDriverWait(self.driver, wait_time).until(
+            lambda driver: bool(driver.find_elements(*row_locator))
+            or any(
+                element.is_displayed()
+                for element in driver.find_elements(*empty_locator)
+            )
+        )
+
+    def wait_for_empty_table(self, row_locator, empty_locator, timeout=None):
+        """Wait until a table displays its empty state and has no rows."""
+        self.wait_for_loading_to_disappear()
+        wait_time = timeout or ConfigReader.get_timeout("feedback")
+
+        return WebDriverWait(self.driver, wait_time).until(
+            lambda driver: any(
+                element.is_displayed()
+                for element in driver.find_elements(*empty_locator)
+            )
+            and not driver.find_elements(*row_locator)
+        )
+
+    def confirm_delete_dialog(self, locator):
+        """Confirm a delete dialog and wait until its request finishes."""
+        self.click(locator)
+        self.wait_for_loading_to_disappear()
+
     def click_via_js(self, locator):
         """Click an element via JS, bypassing Selenium's visibility check.
 
@@ -159,6 +196,27 @@ class BasePage:
         """
         element = self.find_element(locator)
         self.driver.execute_script("arguments[0].click();", element)
+
+    def submit_and_wait(self, locator):
+        """Submit a form and wait for its loading state to finish."""
+        self._last_submit_completed = False
+        self.click(locator)
+        self.wait_for_loading_to_disappear()
+        self._last_submit_completed = True
+
+    def was_last_submit_completed(self, success_locator=None, success_text=None):
+        """Return whether the last submit completed, including short-lived toasts."""
+        if self._last_submit_completed:
+            return True
+        if not success_locator:
+            return False
+
+        expected_text = self._normalize_text(success_text)
+        return any(
+            element.is_displayed()
+            and (not expected_text or expected_text in self._normalize_text(element.text))
+            for element in self.driver.find_elements(*success_locator)
+        )
 
     @staticmethod
     def _normalize_text(value):

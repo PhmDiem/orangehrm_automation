@@ -7,11 +7,11 @@ from pages.dashboard_page import DashboardPage
 from pages.leave.add_entitlements_page import AddEntitlementPage
 from pages.leave.add_user_page import LeaveAddUserPage
 from pages.leave.apply_leave_page import ApplyLeavePage
-from pages.leave.leave_page import LeavePage
+from pages.leave.leave_list_page import LeaveListPage
 from pages.leave.my_leave_page import MyLeavePage
 from pages.login_page import LoginPage
-from pages.pim.create_employee_page import CreateEmployee
-from pages.pim.pim_page import PIMPage
+from pages.pim.add_emloyee_page import CreateEmployee
+from pages.pim.employee_list_page import PIMPage
 from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
@@ -43,7 +43,7 @@ def leave_data():
 @pytest.fixture
 def ensure_leave_entitlement(driver, login, leave_data):
     dashboard_page = DashboardPage(driver)
-    leave_page = LeavePage(driver)
+    leave_page = LeaveListPage(driver)
     apply_leave_page = ApplyLeavePage(driver)
     desired_leave_type = leave_data["valid_leave"]["leave_type"]
     days_to_grant = leave_data.get("entitlement_days_to_grant", 30)
@@ -88,7 +88,7 @@ def _cleanup_pending_leave(driver, employee_username, employee_name, marker):
             )
             employee_dashboard = DashboardPage(driver)
             employee_dashboard.navigate_to_leave_page()
-            employee_leave_page = LeavePage(driver)
+            employee_leave_page = LeaveListPage(driver)
             employee_leave_page.navigate_to_my_leave()
             employee_my_leave_page = MyLeavePage(driver)
             if employee_my_leave_page.get_row_by_marker(marker) is not None:
@@ -168,7 +168,7 @@ def _create_leave_user(driver, employee_name):
 
 def _create_pending_leave_request(driver, leave_data, employee_name, username, password):
     dashboard_page = DashboardPage(driver)
-    leave_page = LeavePage(driver)
+    leave_page = LeaveListPage(driver)
 
     dashboard_page.navigate_to_leave_page()
     assert leave_page.is_leave_page_displayed(), (
@@ -198,7 +198,7 @@ def _create_pending_leave_request(driver, leave_data, employee_name, username, p
     )
     employee_dashboard = DashboardPage(driver)
     employee_dashboard.navigate_to_leave_page()
-    employee_leave_page = LeavePage(driver)
+    employee_leave_page = LeaveListPage(driver)
     employee_leave_page.navigate_to_apply_leave()
     employee_apply_page = ApplyLeavePage(driver)
     assert employee_apply_page.is_page_displayed()

@@ -1,4 +1,7 @@
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+
 from pages.base_page import BasePage
 from utils.config_reader import ConfigReader
 
@@ -42,11 +45,32 @@ class MyLeavePage(BasePage):
         """Tìm dòng chứa đúng marker duy nhất (từ ô Comments), đảm bảo
         xác định chính xác request vừa tạo, không nhầm với bất kỳ request nào khác
         dù có thể trùng ngày tháng/leave type với request cũ."""
-        rows = self.find_elements(self.table_rows)
-        for row in rows:
-            if marker in row.text:
-                return row.text
-        return None
+        def find_matching_row(driver):
+            for row in driver.find_elements(*self.table_rows):
+                if marker in row.text:
+                    return row.text
+            return False
+
+        try:
+            return WebDriverWait(
+                self.driver, ConfigReader.get_timeout("feedback")
+            ).until(find_matching_row)
+        except TimeoutException:
+            return None
+
+    def wait_for_status_by_marker(self, marker: str, expected_status: str):
+        expected_status = expected_status.casefold()
+
+        def find_status(driver):
+            for row in driver.find_elements(*self.table_rows):
+                row_text = row.text
+                if marker in row_text and expected_status in row_text.casefold():
+                    return row_text
+            return False
+
+        return WebDriverWait(
+            self.driver, ConfigReader.get_timeout("feedback")
+        ).until(find_status)
 
     def cancel_leave_by_marker(self, marker: str) -> bool:
         """Cancel a request by marker when its current status allows cancellation.

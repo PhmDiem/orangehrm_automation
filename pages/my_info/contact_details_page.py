@@ -40,10 +40,19 @@ class ContactDetailsPage(BasePage):
             "//h6[normalize-space()='Contact Details']/following::button[@type='submit'][1]",
         )
         self.success_toast = (By.CSS_SELECTOR, ".oxd-toast--success")
+        self.success_message = (
+            By.CSS_SELECTOR,
+            ".oxd-toast-content--success .oxd-toast-message",
+        )
+        self.form_loader = (By.CSS_SELECTOR, ".oxd-form-loader")
         self.required_error = (By.XPATH, "//span[normalize-space()='Required']")
         self.field_error_message = (
             By.XPATH,
             "//span[contains(@class,'oxd-input-field-error-message')]",
+        )
+        self.mobile_error_message = (
+            By.XPATH,
+            "//label[normalize-space()='Mobile']/following::span[contains(@class,'oxd-input-field-error-message')][1]",
         )
 
     def open_contact_details(self):
@@ -59,17 +68,33 @@ class ContactDetailsPage(BasePage):
     def enter_mobile(self, value):
         self.send_keys(self.mobile, value)
 
+    def get_field_value(self, locator):
+        return self.driver.find_element(*locator).get_attribute("value") or ""
+
     def get_mobile_value(self):
         return self.driver.find_element(*self.mobile).get_attribute("value")
 
     def save(self):
-        self.click(self.save_button)
+        self.submit_and_wait(self.save_button)
 
     def is_saved(self):
-        return self.is_element_visible(self.success_toast, timeout=ConfigReader.get_timeout("feedback"))
+        return self.was_last_submit_completed(
+            self.success_message,
+            "successfully updated",
+        )
 
     def has_field_error(self):
         return self.is_element_visible(self.field_error_message, timeout=ConfigReader.get_timeout("medium"))
+
+    def get_mobile_error_text(self):
+        return self.wait.until(
+            lambda driver: (
+                element.text.strip()
+                if (element := driver.find_element(*self.mobile_error_message)).is_displayed()
+                and element.text.strip()
+                else False
+            )
+        )
 
     def get_field_error_texts(self):
         return [el.text for el in self.find_elements(self.field_error_message) if el.text.strip()]

@@ -64,6 +64,11 @@ class PersonalDetailsPage(BasePage):
             "//h6[normalize-space()='Personal Details']/following::button[@type='submit'][1]",
         )
         self.success_toast = (By.CSS_SELECTOR, ".oxd-toast--success")
+        self.success_message = (
+            By.CSS_SELECTOR,
+            ".oxd-toast-content--success .oxd-toast-message",
+        )
+        self.form_loader = (By.CSS_SELECTOR, ".oxd-form-loader")
         self.required_error = (By.XPATH, "//span[normalize-space()='Required']")
 
     def open(self):
@@ -82,6 +87,9 @@ class PersonalDetailsPage(BasePage):
 
     def get_nickname_value(self):
         return self.driver.find_element(*self.nickname).get_attribute("value")
+
+    def get_blood_type_value(self):
+        return self.driver.find_element(*self.blood_type).text.strip()
 
     def select_gender(self, gender):
         locator = self.gender_male if gender.casefold() == "male" else self.gender_female
@@ -102,7 +110,10 @@ class PersonalDetailsPage(BasePage):
         return True
 
     def save(self):
-        self.click(self.save_button)
+        self.submit_and_wait(self.save_button)
 
     def is_saved(self):
-        return self.is_element_visible(self.success_toast, timeout=ConfigReader.get_timeout("feedback"))
+        return self.was_last_submit_completed(
+            self.success_message,
+            "successfully updated",
+        )

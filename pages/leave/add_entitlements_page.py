@@ -40,6 +40,7 @@ class AddEntitlementPage(BasePage):
             By.XPATH, "//button[@type='button' and contains(., 'Confirm')]"
         )
         self.toast_success = (By.CSS_SELECTOR, ".oxd-toast--success")
+        self.form_loader = (By.CSS_SELECTOR, ".oxd-form-loader")
         self.duplicate_error_toast = (By.XPATH, "//p[contains(text(),'already exists')]")
         self.field_error_messages = (By.CSS_SELECTOR, ".oxd-input-field-error-message")
 
@@ -84,6 +85,7 @@ class AddEntitlementPage(BasePage):
         ):
             self.click(self.confirm_modal_btn)
 
+        self.wait_for_loading_to_disappear()
         # Sau Confirm, OrangeHRM redirect sang /leave/viewLeaveEntitlements.
         # Dùng URL làm tín hiệu chính vì toast dễ biến mất trước khi kịp check do redirect.
         self.wait.until(lambda d: "viewLeaveEntitlements" in d.current_url)
@@ -110,7 +112,8 @@ class AddEntitlementPage(BasePage):
         )
 
     def get_field_errors(self):
-        try:
-            return [e.text for e in self.find_elements(self.field_error_messages)]
-        except Exception:
-            return []
+        return [
+            element.text.strip()
+            for element in self.driver.find_elements(*self.field_error_messages)
+            if element.is_displayed() and element.text.strip()
+        ]

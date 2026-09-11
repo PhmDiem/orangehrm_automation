@@ -274,7 +274,9 @@ class TestUserManagement:
             self._search_user_by_username(username)
 
         with allure.step("Verify deleted user is no longer found"):
-            assert self.user_management_page.is_no_records_found_displayed()
+            assert self.user_management_page.wait_for_no_records_found(), (
+                "Expected No Records Found and an empty user table"
+            )
             created_users.remove(username)
 
     @pytest.mark.bulk_delete_users
@@ -313,7 +315,7 @@ class TestUserManagement:
 
         with allure.step("Verify deleted users are no longer displayed"):
             for username in usernames:
-                assert not self.user_management_page.is_user_displayed(
+                assert self.user_management_page.wait_for_user_absent(
                     username
                 ), f"User '{username}' is still displayed"
 

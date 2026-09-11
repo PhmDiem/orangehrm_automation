@@ -2,11 +2,10 @@ import allure
 import pytest
 from utils.test_data import TestData
 from pages.dashboard_page import DashboardPage
-from pages.leave.leave_page import LeavePage
+from pages.leave.leave_list_page import LeaveListPage
 from pages.leave.leave_types_page import LeaveTypesPage
 from pages.leave.apply_leave_page import ApplyLeavePage
 from pages.leave.my_leave_page import MyLeavePage
-from pages.leave.leave_list_page import LeaveListPage
 from pages.login_page import LoginPage
 from utils.config_reader import ConfigReader
 
@@ -18,7 +17,7 @@ class TestLeaveTypes:
     def setup(self, driver, login):
         self.driver = driver
         self.dashboard_page = DashboardPage(driver)
-        self.leave_page = LeavePage(driver)
+        self.leave_page = LeaveListPage(driver)
         self.leave_types_page = LeaveTypesPage(driver)
 
     def _navigate_to_leave(self):
@@ -57,7 +56,7 @@ class TestApplyLeave:
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
         self.dashboard_page = DashboardPage(driver)
-        self.leave_page = LeavePage(driver)
+        self.leave_page = LeaveListPage(driver)
         self.apply_leave_page = ApplyLeavePage(driver)
         self.my_leave_page = MyLeavePage(driver)
 
@@ -150,7 +149,7 @@ class TestManageLeave:
     def setup(self, driver, login):
         self.driver = driver
         self.dashboard_page = DashboardPage(driver)
-        self.leave_page = LeavePage(driver)
+        self.leave_page = LeaveListPage(driver)
         self.leave_list_page = LeaveListPage(driver)
         self.my_leave_page = MyLeavePage(driver)
 
@@ -202,10 +201,11 @@ class TestManageLeave:
         )
         employee_dashboard = DashboardPage(self.driver)
         employee_dashboard.navigate_to_leave_page()
-        employee_leave = LeavePage(self.driver)
+        employee_leave = LeaveListPage(self.driver)
         employee_leave.navigate_to_my_leave()
-        row_text = self.my_leave_page.get_row_by_marker(pending_leave["marker"])
-        assert row_text is not None, "Không tìm thấy request trong My Leave của employee"
+        row_text = self.my_leave_page.wait_for_status_by_marker(
+            pending_leave["marker"], expected_status
+        )
         assert expected_status in row_text.lower(), (
             f"Expected employee status '{expected_status}', got: {row_text}"
         )
@@ -219,7 +219,7 @@ class TestViewLeave:
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
         self.dashboard_page = DashboardPage(driver)
-        self.leave_page = LeavePage(driver)
+        self.leave_page = LeaveListPage(driver)
         self.my_leave_page = MyLeavePage(driver)
 
     @allure.story("TC07 - Xem leave list của bản thân")

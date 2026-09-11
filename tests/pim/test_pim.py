@@ -1,30 +1,55 @@
 import allure
 import pytest
+import logging
 
 from pages.dashboard_page import DashboardPage
-from pages.pim.create_employee_page import CreateEmployee
+from pages.pim.add_emloyee_page import CreateEmployee
 from pages.pim.employee_page import EmployeePage
-from pages.pim.pim_page import PIMPage
+from pages.pim.employee_list_page import PIMPage
 from utils.config_reader import ConfigReader
 from utils.test_data import TestData
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.pim
 class TestEmployeeManagement:
 
     @pytest.fixture(autouse=True)
-    def setup(self, driver, login):
+    def setup(self, driver, login, request):
+        self._created_employees = []
         self.dashboard_page = DashboardPage(driver)
         self.pim_page = PIMPage(driver)
         self.create_employee_page = CreateEmployee(driver)
         self.employee_page = EmployeePage(driver)
+        request.addfinalizer(self._cleanup_created_employees)
+
+    def _cleanup_created_employees(self):
+        for first_name, last_name in self._created_employees:
+            try:
+                self._navigate_to_pim()
+                self._search_employee_by_name(first_name, last_name)
+                if self.pim_page.is_no_records_found_displayed():
+                    continue
+                self.pim_page.delete_first_row_with_bulk_action()
+                self.pim_page.confirm_delete()
+                self.pim_page.wait_for_loading_to_disappear()
+            except Exception as error:
+                logger.warning(
+                    "Could not clean up employee '%s %s': %s",
+                    first_name,
+                    last_name,
+                    error,
+                )
 
     def _navigate_to_pim(self):
         self.dashboard_page.navigate_to_pim_page()
 
     def _create_employee(self, first_name, last_name):
         self.pim_page.navigate_to_add_employee()
-        return self.create_employee_page.create_employee(first_name, last_name)
+        employee_id = self.create_employee_page.create_employee(first_name, last_name)
+        self._created_employees.append((first_name, last_name))
+        return employee_id
 
     def _create_employee_data(self):
         return (
@@ -75,6 +100,7 @@ class TestEmployeeManagement:
             emp_id = self.create_employee_page.create_employee(
                 first_name, last_name
             )
+            self._created_employees.append((first_name, last_name))
 
         with allure.step("Verify Personal Details page is displayed"):
             assert (
@@ -139,10 +165,11 @@ class TestEmployeeManagement:
             self._search_employee_by_name(first_name, last_name)
 
         with allure.step("Verify search result contains the created employee"):
-            row_text = self.pim_page.get_first_row_text()
             assert (
-                first_name in row_text and last_name in row_text
-            ), f"Search result mismatch. Expected '{first_name} {last_name}' in '{row_text}'"
+                self.pim_page.is_employee_row_displayed(
+                    f"{first_name} {last_name}"
+                )
+            ), f"Search result did not contain '{first_name} {last_name}'"
 
     @pytest.mark.search_by_id
     @allure.title("Search employee by Employee ID")
@@ -157,6 +184,7 @@ class TestEmployeeManagement:
             emp_id = self.create_employee_page.create_employee(
                 first_name, last_name
             )
+            self._created_employees.append((first_name, last_name))
 
         with allure.step("Navigate back to Employee List"):
             self.employee_page.navigate_to_employee_list()
@@ -165,10 +193,11 @@ class TestEmployeeManagement:
             self.pim_page.search_by_employee_id(emp_id)
 
         with allure.step("Verify search result contains the created employee"):
-            row_text = self.pim_page.get_first_row_text()
-            assert emp_id in row_text and first_name in row_text, (
-                f"Search result mismatch. Expected ID '{emp_id}' and name "
-                f"'{first_name}' in '{row_text}'"
+            assert self.pim_page.is_employee_row_displayed(
+                f"{emp_id} {first_name}"
+            ), (
+                f"Search result did not contain ID '{emp_id}' and "
+                f"name '{first_name}'"
             )
 
     @pytest.mark.search_no_results
@@ -187,9 +216,9 @@ class TestEmployeeManagement:
             self.pim_page.search_by_employee_id(no_result_id)
 
         with allure.step("Verify 'No Records Found' is displayed"):
-            assert (
-                self.pim_page.is_no_records_found_displayed()
-            ), "'No Records Found' message was not displayed"
+            assert self.pim_page.wait_for_no_records_found(), (
+                "Expected No Records Found and an empty employee table"
+            )
 
     @pytest.mark.view_profile
     @allure.title("View employee profile")
@@ -264,7 +293,9 @@ class TestEmployeeManagement:
 
         with allure.step("Verify employee appears before deletion"):
             assert (
-                not self.pim_page.is_no_records_found_displayed()
+                self.pim_page.is_employee_row_displayed(
+                    f"{first_name} {last_name}"
+                )
             ), "Employee not found before deletion — cannot proceed"
 
         with allure.step("Delete the employee"):
@@ -273,7 +304,9 @@ class TestEmployeeManagement:
             self.pim_page.wait_for_loading_to_disappear()
 
         with allure.step("Verify employee row no longer exists in the table"):
-            row_count = self.pim_page.get_employee_row_count_after_search()
             assert (
-                row_count == 0
-            ), f"Employee still appears after deletion. Found {row_count} row(s)"
+                self.pim_page.wait_for_employee_absent(
+                    f"{first_name} {last_name}"
+                )
+            ), "Employee still appears after deletion"
+            self._created_employees.remove((first_name, last_name))

@@ -19,14 +19,14 @@ class ConfigReader:
             )
 
             if not os.path.isfile(file_path):
-                raise FileNotFoundError(f"Không tìm thấy file: {file_path}")
+                raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     ConfigReader._configs[file_key] = json.load(f)
             except json.JSONDecodeError as e:
                 raise ValueError(
-                    f"File '{file_path}' không đúng format JSON: {e}"
+                    f"File '{file_path}' does not contain valid JSON: {e}"
                 )
 
         return ConfigReader._configs[file_key]
@@ -196,5 +196,5 @@ class ConfigReader:
 
     @staticmethod
     def reload():
-        """Xóa cache để lần gọi tiếp theo đọc lại file JSON từ disk."""
+        """Clear the cache so the next call reloads JSON files from disk."""
         ConfigReader._configs.clear()

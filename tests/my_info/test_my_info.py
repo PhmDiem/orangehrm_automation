@@ -1,5 +1,6 @@
 import allure
 import pytest
+import logging
 
 from pages.dashboard_page import DashboardPage
 from pages.my_info.personal_details_page import PersonalDetailsPage
@@ -8,10 +9,14 @@ from pages.my_info.emergency_contacts_page import EmergencyContactsPage
 from utils.config_reader import ConfigReader
 from utils.test_data import TestData
 
+logger = logging.getLogger(__name__)
+
 @pytest.mark.my_info
 class TestMyInfo:
     @pytest.fixture(autouse=True)
-    def setup(self, driver, login):
+    def setup(self, driver, login, request):
+        self._created_emergency_contacts = []
+        self._my_info_changed = False
         self.dashboard_page = DashboardPage(driver)
         self.personal_details_page = PersonalDetailsPage(driver)
         self.contact_details_page = ContactDetailsPage(driver)
@@ -19,6 +24,84 @@ class TestMyInfo:
 
         self.dashboard_page.navigate_to_my_info_page()
         assert self.personal_details_page.open(), "My Info page is not displayed"
+        self._personal_snapshot = self._capture_personal_details()
+        self._contact_snapshot = self._capture_contact_details()
+        self.personal_details_page.open_personal_details()
+        request.addfinalizer(self._restore_my_info)
+
+    def _capture_personal_details(self):
+        nickname = None
+        blood_type = None
+        if self.personal_details_page.is_element_visible(
+            self.personal_details_page.nickname, timeout=ConfigReader.get_timeout("short")
+        ):
+            nickname = self.personal_details_page.get_nickname_value()
+        if self.personal_details_page.is_element_visible(
+            self.personal_details_page.blood_type, timeout=ConfigReader.get_timeout("short")
+        ):
+            blood_type = self.personal_details_page.get_blood_type_value()
+
+        gender = next(
+            (
+                value
+                for value in ("Male", "Female")
+                if self.personal_details_page.is_gender_selected(value)
+            ),
+            None,
+        )
+        return {"nickname": nickname, "blood_type": blood_type, "gender": gender}
+
+    def _capture_contact_details(self):
+        self.contact_details_page.open_contact_details()
+        return {
+            "street_1": self.contact_details_page.get_field_value(
+                self.contact_details_page.street_1
+            ),
+            "city": self.contact_details_page.get_field_value(
+                self.contact_details_page.city
+            ),
+            "mobile": self.contact_details_page.get_field_value(
+                self.contact_details_page.mobile
+            ),
+        }
+
+    def _restore_my_info(self):
+        if not self._my_info_changed:
+            return
+
+        try:
+            self.dashboard_page.navigate_to_my_info_page()
+            self.personal_details_page.open_personal_details()
+            if self._personal_snapshot["nickname"] is not None:
+                self.personal_details_page.enter_nickname_if_available(
+                    self._personal_snapshot["nickname"]
+                )
+            if self._personal_snapshot["gender"]:
+                self.personal_details_page.select_gender(
+                    self._personal_snapshot["gender"]
+                )
+            if self._personal_snapshot["blood_type"]:
+                self.personal_details_page.select_blood_type_if_available(
+                    self._personal_snapshot["blood_type"]
+                )
+            self.personal_details_page.save()
+            self.personal_details_page.is_saved()
+
+            self.contact_details_page.open_contact_details()
+            self.contact_details_page.enter_street_1(
+                self._contact_snapshot["street_1"]
+            )
+            self.contact_details_page.enter_city(self._contact_snapshot["city"])
+            self.contact_details_page.enter_mobile(self._contact_snapshot["mobile"])
+            self.contact_details_page.save()
+            self.contact_details_page.is_saved()
+
+            self.emergency_contacts_page.open_emergency_contacts()
+            for name in self._created_emergency_contacts:
+                if any(name in row for row in self.emergency_contacts_page.get_emergency_rows_text()):
+                    self.emergency_contacts_page.delete_emergency_contact(name)
+        except Exception as error:
+            logger.warning("Could not restore My Info test data: %s", error)
 
     @allure.title("TC01 - Xem thông tin cá nhân")
     def test_view_personal_information(self):
@@ -33,6 +116,7 @@ class TestMyInfo:
 
     @allure.title("TC02 - Cập nhật Personal Details (nickname, gender, blood type)")
     def test_update_personal_details(self):
+        self._my_info_changed = True
         nickname = TestData.generate_employee_name("Nick")
         personal_data = ConfigReader.get_my_info_data("personal_details")
 
@@ -67,6 +151,7 @@ class TestMyInfo:
 
     @allure.title("TC03 - Cập nhật Contact Details (địa chỉ, số điện thoại)")
     def test_update_contact_details(self):
+        self._my_info_changed = True
         contact_data = ConfigReader.get_my_info_data("contact")
 
         with allure.step("Mở tab Contact Details"):
@@ -91,6 +176,7 @@ class TestMyInfo:
 
     @allure.title("TC04 - Thêm Emergency Contact")
     def test_add_emergency_contact(self):
+        self._my_info_changed = True
         name = TestData.generate_employee_name("Emergency")
         emergency_data = ConfigReader.get_my_info_data("emergency_contact")
 
@@ -102,6 +188,7 @@ class TestMyInfo:
                 "Save Emergency Contact form is not displayed"
 
         with allure.step(f"Nhập thông tin liên hệ khẩn cấp: {name}"):
+            self._created_emergency_contacts.append(name)
             self.emergency_contacts_page.enter_emergency_contact(
                 name,
                 emergency_data["relationship"],
@@ -135,6 +222,7 @@ class TestMyInfo:
 
     @allure.title("TC06 - Nhập số điện thoại chứa chữ cái → hiện lỗi")
     def test_contact_details_invalid_phone_format(self):
+        self._my_info_changed = True
         validation_data = ConfigReader.get_my_info_data("validation")
         invalid_mobile = validation_data["invalid_mobile"]
 
@@ -148,8 +236,8 @@ class TestMyInfo:
             self.contact_details_page.save()
 
         with allure.step("Verify hiện lỗi validate số điện thoại"):
-            assert self.contact_details_page.has_field_error(), \
-                "Validation error for invalid phone number was not displayed"
+            assert "allows numbers" in self.contact_details_page.get_mobile_error_text().casefold(), \
+                "Mobile validation error was not displayed"
 
         with allure.step("Verify không có toast lưu thành công"):
             assert not self.contact_details_page.is_element_visible(

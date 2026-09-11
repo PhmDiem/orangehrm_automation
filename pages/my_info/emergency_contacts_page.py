@@ -28,6 +28,12 @@ class EmergencyContactsPage(BasePage):
         self.save_button = (By.XPATH, "//button[@type='submit']")
 
         self.success_toast = (By.CSS_SELECTOR, ".oxd-toast--success")
+        self.success_message = (
+            By.CSS_SELECTOR,
+            ".oxd-toast-content--success .oxd-toast-message",
+        )
+        self.form_loader = (By.CSS_SELECTOR, ".oxd-form-loader")
+        self.table_loader = (By.CSS_SELECTOR, ".oxd-table-loader")
         self.required_error = (By.XPATH, "//span[normalize-space()='Required']")
         self.emergency_rows = (By.CSS_SELECTOR, ".oxd-table-body .oxd-table-card")
 
@@ -46,16 +52,19 @@ class EmergencyContactsPage(BasePage):
             self.send_keys(self.mobile, mobile)
 
     def save(self):
-        self.click(self.save_button)
+        self.submit_and_wait(self.save_button)
 
     def is_saved(self):
-        return self.is_element_visible(self.success_toast, timeout=ConfigReader.get_timeout("feedback"))
+        return self.was_last_submit_completed(
+            self.success_message,
+            "successfully saved",
+        )
 
     def has_required_error(self):
         return self.is_element_visible(self.required_error, timeout=ConfigReader.get_timeout("medium"))
 
     def get_emergency_rows_text(self):
-        return [row.text for row in self.find_elements(self.emergency_rows)]
+        return [row.text for row in self.driver.find_elements(*self.emergency_rows)]
 
     def wait_for_emergency_contact(self, name):
         return self.wait.until(
@@ -63,4 +72,20 @@ class EmergencyContactsPage(BasePage):
                 name in row.text
                 for row in driver.find_elements(*self.emergency_rows)
             )
+        )
+
+    def delete_emergency_contact(self, name):
+        row = (
+            By.XPATH,
+            f"//div[contains(@class,'oxd-table-card')][contains(normalize-space(.), '{name}')]",
+        )
+        delete_button = (
+            By.XPATH,
+            f"{row[1]}//i[contains(@class, 'bi-trash')]",
+        )
+        self.click(delete_button)
+        self.click((By.XPATH, "//button[normalize-space()='Yes, Delete']"))
+        self.wait_for_loading_to_disappear()
+        self.wait.until(
+            lambda driver: not driver.find_elements(*row)
         )
