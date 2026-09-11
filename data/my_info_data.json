@@ -1,4 +1,8 @@
 {
+  "personal_details": {
+    "gender": "Female",
+    "blood_type": "O+"
+  },
   "contact": {
     "street_1": "Automation Street 1",
     "city": "Ho Chi Minh City",
@@ -7,5 +11,8 @@
   "emergency_contact": {
     "relationship": "Sibling",
     "mobile": "0900000002"
+  },
+  "validation": {
+    "invalid_mobile": "abc123xyz"
   }
 }

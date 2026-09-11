@@ -26,22 +26,19 @@ class LeaveListPage(BasePage):
         )
         self.search_btn = (By.XPATH, '//button[@type="submit"]')
 
-        # Approve/Reject are direct actions in the row, alongside the overflow
-        # menu. Scope the click to the marker row so another request cannot be
-        # changed accidentally.
         self.approve_btn_relative = (
-            By.XPATH, ".//button[normalize-space()='Approve']"
+            By.XPATH,
+            ".//button[normalize-space()='Approve' or .//*[normalize-space()='Approve']]",
         )
         self.reject_btn_relative = (
-            By.XPATH, ".//button[normalize-space()='Reject']"
+            By.XPATH,
+            ".//button[normalize-space()='Reject' or .//*[normalize-space()='Reject']]",
         )
 
     def is_page_displayed(self):
         return self.is_displayed(self.leave_list_header)
 
-    def search_scheduled_leave_for_employee(self, employee_name: str):
-        # The page can preload "Pending Approval". Remove all preselected
-        # statuses so the search is explicitly restricted to Scheduled.
+    def search_pending_leave_for_employee(self, employee_name: str):
         while True:
             close_buttons = self.driver.find_elements(*self.selected_status_close)
             if not close_buttons:
@@ -55,7 +52,9 @@ class LeaveListPage(BasePage):
             expected_text=employee_name,
         )
         self.click(self.status_dropdown)
-        self.click_dropdown_option(self.status_options, expected_text='Scheduled')
+        self.click_dropdown_option(
+            self.status_options, expected_text='Pending Approval'
+        )
         self.click(self.search_btn)
         self.wait_for_loading_to_disappear()
 

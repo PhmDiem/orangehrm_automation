@@ -168,7 +168,7 @@ class TestManageLeave:
 
         with allure.step("Navigate to Leave List"):
             self._go_to_leave_list()
-            self.leave_list_page.search_scheduled_leave_for_employee(
+            self.leave_list_page.search_pending_leave_for_employee(
                 pending_leave["employee_name"]
             )
 
@@ -184,7 +184,7 @@ class TestManageLeave:
 
         with allure.step("Navigate to Leave List"):
             self._go_to_leave_list()
-            self.leave_list_page.search_scheduled_leave_for_employee(
+            self.leave_list_page.search_pending_leave_for_employee(
                 pending_leave["employee_name"]
             )
 
