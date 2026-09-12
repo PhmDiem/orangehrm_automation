@@ -78,7 +78,7 @@ class AddEntitlementPage(BasePage):
     def click_save(self):
         self.click(self.save_btn)
 
-        # Modal "Updating Entitlement" chỉ xuất hiện khi entitlement đã tồn tại
+        # The "Updating Entitlement" modal appears only when the entitlement exists.
         if self.is_element_visible(
             self.confirm_modal_btn,
             timeout=ConfigReader.get_timeout("medium"),
@@ -86,8 +86,8 @@ class AddEntitlementPage(BasePage):
             self.click(self.confirm_modal_btn)
 
         self.wait_for_loading_to_disappear()
-        # Sau Confirm, OrangeHRM redirect sang /leave/viewLeaveEntitlements.
-        # Dùng URL làm tín hiệu chính vì toast dễ biến mất trước khi kịp check do redirect.
+        # After confirmation, OrangeHRM redirects to /leave/viewLeaveEntitlements.
+        # Use the URL as the primary signal because the toast may disappear during the redirect.
         self.wait.until(lambda d: "viewLeaveEntitlements" in d.current_url)
 
     def add_entitlement(self, leave_type: str, days: str, employee_name=None):
@@ -102,7 +102,7 @@ class AddEntitlementPage(BasePage):
     # --- Verification ---
 
     def is_success(self):
-        """Đã redirect sang trang danh sách Entitlements -> submit + confirm hoàn tất."""
+        """Return whether submission and confirmation redirected to the entitlements list."""
         return "viewLeaveEntitlements" in self.driver.current_url
 
     def is_duplicate_entitlement_error(self):

@@ -10,7 +10,10 @@ from utils.test_data import TestData
 
 
 @pytest.mark.admin
+@pytest.mark.regression
 class TestUserManagement:
+
+    # --- Fixtures and setup ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -48,6 +51,8 @@ class TestUserManagement:
         request.addfinalizer(cleanup)
         return usernames
 
+    # --- Test helpers ---
+
     def _navigate_to_admin(self):
         self.dashboard_page.navigate_to_admin_page()
 
@@ -60,8 +65,8 @@ class TestUserManagement:
             ConfigReader.get_test_user_password(),
         )
 
-    def _create_user_data(self):
-        return TestData.generate_username()
+    def _create_user_data(self, prefix="test_user"):
+        return TestData.generate_username(prefix)
 
     def _search_user_by_username(self, username):
         self.user_management_page.enter_username_search(username)
@@ -286,26 +291,37 @@ class TestUserManagement:
             self._navigate_to_admin()
 
         with allure.step("Create 2 users for bulk deletion"):
+            # Keep a shared prefix so the two rows sort together in the ESS
+            # result list. OrangeHRM's Username filter is an exact match and
+            # changing its criteria clears the current bulk selection.
+            batch_prefix = TestData.generate_unique_marker("bulk_user")
             for _ in range(2):
-                username = self._create_user_data()
+                username = self._create_user_data(batch_prefix)
                 created_users.append(username)
-                self._create_user(username)
+                self._create_and_verify_user(username)
+                self._search_user_by_username(username)
+                assert self.user_management_page.is_user_displayed(username), (
+                    f"Created user '{username}' was not persisted"
+                )
 
             self._navigate_to_admin()
 
-        with allure.step("Filter users by current employee and ESS role"):
-            self.user_management_page.select_employee()
+        with allure.step("Filter the ESS list containing both created users"):
+            usernames = list(created_users)
             self.user_management_page.select_user_role(TestData.DEFAULT_ROLE)
             self.user_management_page.click_search_btn()
+            for username in usernames:
+                assert self.user_management_page.is_user_displayed(username), (
+                    f"Created user '{username}' was not found for bulk deletion"
+                )
 
-        with allure.step("Select only test_user accounts"):
-            usernames = self.user_management_page.get_usernames_by_prefix(
-                "test_user_"
-            )
-            assert usernames, "No test_user_ accounts were found to delete"
+        with allure.step("Select both users in the same filtered result set"):
             for username in usernames:
                 with allure.step(f"Select checkbox for: {username}"):
                     self.user_management_page.select_checkbox(username)
+            assert self.user_management_page.wait_for_selected_records(2), (
+                "The two created users were not retained in the bulk selection"
+            )
 
         with allure.step("Delete selected users"):
             self.user_management_page.click_bulk_delete_btn()

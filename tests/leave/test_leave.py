@@ -11,7 +11,10 @@ from utils.config_reader import ConfigReader
 
 
 @pytest.mark.leave
+@pytest.mark.regression
 class TestLeaveTypes:
+
+    # --- Fixtures and navigation helpers ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -48,10 +51,15 @@ class TestLeaveTypes:
                 self.leave_types_page.get_leave_type_row_count() > 0
             ), "Leave types list is empty"
 
+    # --- Apply leave tests ---
+
 @pytest.mark.leave
+@pytest.mark.regression
 @allure.epic("Leave Management")
 @allure.feature("Apply Leave")
 class TestApplyLeave:
+
+    # --- Fixtures and navigation helpers ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -81,8 +89,10 @@ class TestApplyLeave:
             if self.my_leave_page.get_row_by_marker(marker) is not None:
                 self.my_leave_page.cancel_leave_by_marker(marker)
 
+    # --- Apply leave tests ---
+
     @pytest.mark.apply_leave_valid
-    @allure.story("TC02 - Apply leave hợp lệ")
+    @allure.story("TC02 - Apply a valid leave")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_apply_valid_leave_status_pending(
         self, leave_data, ensure_leave_entitlement, created_leave_markers
@@ -94,9 +104,8 @@ class TestApplyLeave:
         leave_type = leave_data["valid_leave"]["leave_type"]
 
         with allure.step("Apply a valid leave request"):
-            # Dùng ngày sinh động qua date_generator (thay vì ngày cố định trong
-            # leave_data) và tự động thử lại nếu trùng với leave request cũ
-            # còn leftover từ lần chạy trước ('Overlapping Leave Request').
+            # Use dynamic dates from date_generator instead of the fixed dates in
+            # leave_data, retrying when they overlap a leftover request.
             self.apply_leave_page.apply_leave_avoiding_overlap(
                 leave_type=leave_type,
                 date_generator=TestData.generate_future_leave_dates,
@@ -110,10 +119,11 @@ class TestApplyLeave:
             self.apply_leave_page.navigate_to_my_leave()
 
             row_text = self.my_leave_page.get_row_by_marker(marker)
-            assert row_text is not None, f"Không tìm thấy request với marker '{marker}' trong My Leave"
+            assert row_text is not None, f"Could not find request with marker '{marker}' in My Leave"
             assert "pending" in row_text.lower(), f"Expected Pending status, got: {row_text}"
 
-    @allure.story("TC03 - Apply leave ngày quá khứ")
+    @pytest.mark.apply_leave_past_date
+    @allure.story("TC03 - Apply leave with a past date")
     def test_apply_leave_past_date_shows_error(self, leave_data, ensure_leave_entitlement):
         with allure.step("Navigate to Apply Leave"):
             self._navigate_to_apply_leave()
@@ -128,7 +138,8 @@ class TestApplyLeave:
                 for e in errors
             ), f"Expected date error not found, got: {errors}"
 
-    @allure.story("TC04 - Apply leave thiếu field")
+    @pytest.mark.apply_leave_missing_field
+    @allure.story("TC04 - Apply leave with a missing field")
     def test_apply_leave_missing_field_shows_error(self, leave_data):
         with allure.step("Navigate to Apply Leave"):
             self._navigate_to_apply_leave()
@@ -141,9 +152,12 @@ class TestApplyLeave:
 
 
 @pytest.mark.leave
+@pytest.mark.regression
 @allure.epic("Leave Management")
 @allure.feature("Approve/Reject Leave")
 class TestManageLeave:
+
+    # --- Fixtures and navigation helpers ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -158,9 +172,12 @@ class TestManageLeave:
         self.leave_page.navigate_to_leave_list()
         assert self.leave_list_page.is_page_displayed()
 
+    # --- Approval and rejection tests ---
+
+    @pytest.mark.approve_leave
     @allure.story("TC05 - Admin approve leave")
     @allure.description(
-        "Tạo employee động, cấp entitlement, assign leave rồi để Admin approve."
+        "Create a dynamic employee, grant entitlement, assign leave, then approve it as Admin."
     )
     def test_admin_approve_leave(self, pending_leave):
         marker = pending_leave["marker"]
@@ -177,6 +194,7 @@ class TestManageLeave:
         with allure.step("Verify Scheduled status in employee My Leave"):
             self._verify_employee_status(pending_leave, "scheduled")
 
+    @pytest.mark.reject_leave
     @allure.story("TC06 - Admin reject leave")
     def test_admin_reject_leave(self, pending_leave):
         marker = pending_leave["marker"]
@@ -212,9 +230,12 @@ class TestManageLeave:
 
 
 @pytest.mark.leave
+@pytest.mark.regression
 @allure.epic("Leave Management")
 @allure.feature("View Leave")
 class TestViewLeave:
+
+    # --- Fixtures ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login):
@@ -222,7 +243,10 @@ class TestViewLeave:
         self.leave_page = LeaveListPage(driver)
         self.my_leave_page = MyLeavePage(driver)
 
-    @allure.story("TC07 - Xem leave list của bản thân")
+    # --- Verification tests ---
+
+    @pytest.mark.view_my_leave
+    @allure.story("TC07 - View the personal leave list")
     def test_view_own_leave_list(self):
         with allure.step("Navigate to My Leave"):
             self.dashboard_page.navigate_to_leave_page()

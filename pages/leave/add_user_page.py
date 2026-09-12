@@ -8,7 +8,11 @@ from pages.admin.add_user_page import AddUserPage
 class LeaveAddUserPage(AddUserPage):
     """Leave-only extension for creating an ESS account for a target employee."""
 
+    # --- Feedback locators ---
+
     success_toast = (By.CSS_SELECTOR, ".oxd-toast--success")
+
+    # --- Employee selection ---
 
     def select_employee_by_name(self, employee_name):
         """Select a newly-created employee after its Admin search index updates."""
@@ -33,6 +37,8 @@ class LeaveAddUserPage(AddUserPage):
                 if attempt == 2:
                     raise
 
+    # --- User creation ---
+
     def create_user_for_employee(self, role, status, username, password, employee_name):
         self.select_user_role(role)
         self.select_employee_by_name(employee_name)
@@ -41,6 +47,8 @@ class LeaveAddUserPage(AddUserPage):
         self.enter_password(password)
         self.enter_confirm_password(password)
         self.click_save_btn()
+
+    # --- Verification ---
 
     def is_save_successful(self, timeout=8):
         """Confirm save only after the Add User route has finished changing.

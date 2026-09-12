@@ -7,8 +7,12 @@ from utils.config_reader import ConfigReader
 
 
 @pytest.mark.login
+@pytest.mark.regression
 class TestLogin:
 
+    # --- Successful login ---
+
+    @pytest.mark.smoke
     @allure.title("Login successfully with valid admin credentials")
     def test_login_success(self, driver):
         login_page = LoginPage(driver)
@@ -20,6 +24,8 @@ class TestLogin:
         with allure.step("Verify Dashboard is displayed"):
             dashboard_page = DashboardPage(driver)
             assert dashboard_page.is_upgrade_button_displayed()
+
+            # --- Failed login validation ---
 
     @pytest.mark.smoke
     @pytest.mark.parametrize(
@@ -44,6 +50,9 @@ class TestLogin:
         with allure.step(f"Verify error message: {expected_error}"):
             assert login_page.get_error_message() == expected_error
 
+    # --- Logout ---
+
+    @pytest.mark.smoke
     @pytest.mark.logout
     @allure.title("Logout successfully")
     def test_logout(self, driver):

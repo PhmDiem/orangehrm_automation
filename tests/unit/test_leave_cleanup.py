@@ -1,6 +1,11 @@
 from types import SimpleNamespace
 
+import pytest
+
 from tests.leave import conftest as leave_conftest
+
+
+pytestmark = pytest.mark.regression
 
 
 class FakeLoginPage:

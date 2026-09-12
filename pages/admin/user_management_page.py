@@ -10,6 +10,7 @@ class UserManagementPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Page and table locators ---
         self.system_users = (By.XPATH, '//h5[text()="System Users"]')
         self.users_list = (By.XPATH, '//div[@class="oxd-table"]')
         self.user_rows = (By.CSS_SELECTOR, ".oxd-table .oxd-table-card")
@@ -50,6 +51,12 @@ class UserManagementPage(BasePage):
             By.XPATH,
             '//button[text()=" Delete Selected "]',
         )
+        self.selected_records_count = (
+            By.XPATH,
+            "//*[contains(normalize-space(.), 'Selected')]",
+        )
+
+    # --- Page state ---
 
     def is_user_management_displayed(self):
         return self.is_displayed(self.system_users)
@@ -62,6 +69,8 @@ class UserManagementPage(BasePage):
 
     def navigate_to_add_user(self):
         self.click(self.add_btn)
+
+    # --- Search and filter actions ---
 
     def select_user_role(self, role):
         self.click(self.user_role)
@@ -110,6 +119,8 @@ class UserManagementPage(BasePage):
 
         return self.wait.until(find_matching_row)
 
+    # --- Search verification ---
+
     def enter_username_search(self, username):
         self.send_keys(self.input_username_search, username)
 
@@ -143,6 +154,8 @@ class UserManagementPage(BasePage):
 
         self.wait.until(click_fresh_row_link)
 
+    # --- Delete actions ---
+
     def delete_user_row(self, username):
         delete_icon = (
             By.XPATH,
@@ -174,6 +187,19 @@ class UserManagementPage(BasePage):
 
     def click_bulk_delete_btn(self):
         self.click(self.bulk_delete_btn)
+
+    def wait_for_selected_records(self, expected_count):
+        """Wait until the bulk-selection toolbar confirms the selected count."""
+        noun = "Record" if expected_count == 1 else "Records"
+        expected_text = f"({expected_count}) {noun} Selected"
+        return WebDriverWait(
+            self.driver, ConfigReader.get_timeout("feedback")
+        ).until(
+            lambda driver: any(
+                expected_text in element.text
+                for element in driver.find_elements(*self.selected_records_count)
+            )
+        )
 
     def is_user_displayed(self, username):
         user_row = (

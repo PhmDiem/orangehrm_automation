@@ -24,6 +24,8 @@ class BasePage:
         )
         self._last_submit_completed = False
 
+    # --- Element interactions ---
+
     def find_element(self, locator):
         return self.wait.until(EC.presence_of_element_located(locator))
 
@@ -142,12 +144,20 @@ class BasePage:
             ".oxd-loading-spinner, .oxd-form-loader, .oxd-table-loader",
         )
 
-        try:
-            WebDriverWait(self.driver, wait_time).until(
-                lambda driver: all(
+        def loaders_are_gone(driver):
+            try:
+                return all(
                     not loader.is_displayed()
                     for loader in driver.find_elements(*loader_locator)
                 )
+            except StaleElementReferenceException:
+                # OrangeHRM replaces loader nodes as the SPA re-renders.
+                # Re-query them on the next poll instead of failing the action.
+                return False
+
+        try:
+            WebDriverWait(self.driver, wait_time).until(
+                loaders_are_gone
             )
         except TimeoutException:
             logger.error(
@@ -205,18 +215,26 @@ class BasePage:
         self._last_submit_completed = True
 
     def was_last_submit_completed(self, success_locator=None, success_text=None):
-        """Return whether the last submit completed, including short-lived toasts."""
-        if self._last_submit_completed:
-            return True
+        """Wait for and confirm the expected successful-submit feedback."""
         if not success_locator:
             return False
 
         expected_text = self._normalize_text(success_text)
-        return any(
-            element.is_displayed()
-            and (not expected_text or expected_text in self._normalize_text(element.text))
-            for element in self.driver.find_elements(*success_locator)
-        )
+        try:
+            return WebDriverWait(
+                self.driver, ConfigReader.get_timeout("feedback")
+            ).until(
+                lambda driver: any(
+                    element.is_displayed()
+                    and (
+                        not expected_text
+                        or expected_text in self._normalize_text(element.text)
+                    )
+                    for element in driver.find_elements(*success_locator)
+                )
+            )
+        except TimeoutException:
+            return False
 
     @staticmethod
     def _normalize_text(value):

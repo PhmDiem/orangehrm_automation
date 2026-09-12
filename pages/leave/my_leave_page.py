@@ -24,9 +24,9 @@ class MyLeavePage(BasePage):
 
     def get_status_for_leave(self, from_date_ui: str, to_date_ui: str) -> str:
         """
-        Tìm đúng dòng chứa khoảng ngày (theo format UI hiển thị, vd '2026-12-09')
-        vừa apply, trả về text status của dòng đó.
-        Trả về None nếu không tìm thấy dòng nào khớp.
+        Find the row containing the applied date range in the UI format
+        (for example, '2026-12-09') and return its status text.
+        Return None when no matching row is found.
         """
         rows = self.find_elements(self.table_rows)
         for row in rows:
@@ -42,9 +42,11 @@ class MyLeavePage(BasePage):
         return "pending" in row_text.lower()
 
     def get_row_by_marker(self, marker: str):
-        """Tìm dòng chứa đúng marker duy nhất (từ ô Comments), đảm bảo
-        xác định chính xác request vừa tạo, không nhầm với bất kỳ request nào khác
-        dù có thể trùng ngày tháng/leave type với request cũ."""
+        """Find the row containing the unique Comments marker.
+
+        This identifies the newly created request even when an older request
+        has the same dates or leave type.
+        """
         def find_matching_row(driver):
             for row in driver.find_elements(*self.table_rows):
                 if marker in row.text:

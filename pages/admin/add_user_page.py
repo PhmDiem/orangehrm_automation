@@ -7,6 +7,7 @@ class AddUserPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Form locators ---
         self.user_role = (
             By.XPATH,
             '//label[text()="User Role"]/following::div[1]',
@@ -36,6 +37,8 @@ class AddUserPage(BasePage):
         self.save_btn = (By.XPATH, '//button[@type="submit"]')
         self.username_error = (By.XPATH, '//span[text()="Already exists"]')
         self.required_error_message = (By.XPATH, '//span[text()="Required"]')
+
+    # --- Form actions ---
 
     def select_user_role(self, role):
         self.click(self.user_role)
@@ -80,6 +83,8 @@ class AddUserPage(BasePage):
         self.enter_password(password)
         self.enter_confirm_password(password)
         self.click_save_btn()
+
+    # --- Verification ---
 
     def get_username_error_text(self):
         return self.get_text(self.username_error)

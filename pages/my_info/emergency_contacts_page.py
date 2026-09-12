@@ -9,6 +9,7 @@ class EmergencyContactsPage(BasePage):
         super().__init__(driver)
         """Page object for the logged-in user's My Info > Emergency Contacts tab."""
 
+        # --- Navigation and list locators ---
         self.emergency_contacts_tab = (
             By.XPATH,
             "//a[contains(@class,'orangehrm-tabs-item') and normalize-space()='Emergency Contacts']",
@@ -16,7 +17,7 @@ class EmergencyContactsPage(BasePage):
         self.list_heading = (By.XPATH, "//h6[normalize-space()='Assigned Emergency Contacts']")
         self.add_button = (By.XPATH, "//button[contains(normalize-space(.), 'Add')]")
 
-        # Add/Save form
+        # --- Add/save form locators ---
         self.form_heading = (By.XPATH, "//h6[normalize-space()='Save Emergency Contact']")
         self.name = (By.XPATH, "//label[normalize-space()='Name']/following::input[1]")
         self.relationship = (By.XPATH, "//label[normalize-space()='Relationship']/following::input[1]")
@@ -36,6 +37,8 @@ class EmergencyContactsPage(BasePage):
         self.table_loader = (By.CSS_SELECTOR, ".oxd-table-loader")
         self.required_error = (By.XPATH, "//span[normalize-space()='Required']")
         self.emergency_rows = (By.CSS_SELECTOR, ".oxd-table-body .oxd-table-card")
+
+    # --- Navigation and form actions ---
 
     def open_emergency_contacts(self):
         self.click(self.emergency_contacts_tab)
@@ -59,6 +62,8 @@ class EmergencyContactsPage(BasePage):
             self.success_message,
             "successfully saved",
         )
+
+    # --- Verification and cleanup ---
 
     def has_required_error(self):
         return self.is_element_visible(self.required_error, timeout=ConfigReader.get_timeout("medium"))

@@ -10,6 +10,7 @@ class EmployeePage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Locators ---
         self.personal_details_heading = (
             By.XPATH,
             '//h6[text()="Personal Details"]',
@@ -41,6 +42,8 @@ class EmployeePage(BasePage):
             By.XPATH,
             '//div[contains(@class,"oxd-toast--success")]',
         )
+
+    # --- Navigation and form actions ---
 
     def navigate_to_employee_list(self):
         self.click(self.employee_list_btn)
@@ -81,6 +84,19 @@ class EmployeePage(BasePage):
             self.blood_type_dropdown,
             timeout=ConfigReader.get_timeout("short"),
         )
+
+    def is_gender_selected(self, gender):
+        locator = (
+            self.gender_male_radio
+            if gender.casefold() == "male"
+            else self.gender_female_radio
+        )
+        return self.find_element(locator).is_selected()
+
+    def get_blood_type_value(self):
+        return self.find_element(self.blood_type_dropdown).text.strip()
+
+    # --- Verification ---
 
     def click_save(self):
         self.click(self.save_btn)

@@ -36,8 +36,8 @@ class ApplyLeavePage(BasePage):
         self.no_leave_balance_message = (
             By.XPATH, "//p[text()='No Leave Types with Leave Balance']"
         )
-        # Xuất hiện khi ngày apply trùng với 1 leave request khác đã tồn tại
-        # (thường là leftover từ lần chạy test trước, chưa bị hủy/duyệt).
+        # Shown when the selected date overlaps an existing leave request
+        # (usually leftover data from a previous test run).
         self.overlap_warning_header = (
             By.XPATH, "//*[normalize-space(text())='Overlapping Leave Request(s) Found']"
         )
@@ -66,11 +66,7 @@ class ApplyLeavePage(BasePage):
         self.click(self.my_leave_btn)
 
     def _to_ui_date_format(self, iso_date: str) -> str:
-        """
-        Convert ngày từ format chuẩn YYYY-MM-DD (dùng trong test data/leave_data.json)
-        sang đúng format UI thực tế của OrangeHRM: YYYY-DD-MM
-        (xác nhận qua placeholder 'yyyy-dd-mm' hiển thị trên form Apply Leave).
-        """
+        """Convert ISO YYYY-MM-DD to OrangeHRM's UI format YYYY-DD-MM."""
         year, month, day = iso_date.split("-")
         return f"{year}-{day}-{month}"
 
@@ -79,8 +75,7 @@ class ApplyLeavePage(BasePage):
 
         self.click(date_input_locator)
 
-        # Đợi calendar thực sự render xong (year label có giá trị, không rỗng)
-        # trước khi bắt đầu đọc - tránh đọc trúng lúc DOM đang transition
+        # Wait for the calendar to finish rendering before reading its labels.
         self.wait.until(
             lambda d: self.get_text(self.calendar_year_label).strip() != ""
         )
@@ -101,7 +96,7 @@ class ApplyLeavePage(BasePage):
             else:
                 self.click(self.calendar_prev_btn)
         else:
-            raise TimeoutError(f"Không thể điều hướng calendar tới {target.year}-{target.month:02d}")
+            raise TimeoutError(f"Could not navigate the calendar to {target.year}-{target.month:02d}")
 
         day_cells = self.find_elements(self.calendar_date_cells)
         for cell in day_cells:
@@ -109,10 +104,10 @@ class ApplyLeavePage(BasePage):
                 cell.click()
                 break
         else:
-            raise ValueError(f"Không tìm thấy ngày {target.day} trong calendar")
+            raise ValueError(f"Could not find day {target.day} in the calendar")
 
-        # Đợi calendar đóng hẳn trước khi trả về, tránh popup còn sót lại
-        # ảnh hưởng tới lần mở calendar tiếp theo (From Date -> To Date)
+        # Wait for the calendar to close before returning so the next date picker
+        # (From Date -> To Date) is not affected by a stale popup.
         self.wait.until(lambda d: len(d.find_elements(*self.calendar_date_cells)) == 0)
 
     def apply_leave(
@@ -147,9 +142,10 @@ class ApplyLeavePage(BasePage):
                     timeout=ConfigReader.get_timeout("feedback")
                 )
             except TimeoutException:
-                logger.warning(
+                logger.info(
                     "Apply Leave completed without visible feedback; "
-                    "the public demo may have dismissed the toast already."
+                    "the public demo may have dismissed the toast already; "
+                    "the created request is verified by its marker afterward."
                 )
         return True
 
@@ -165,12 +161,7 @@ class ApplyLeavePage(BasePage):
         )
 
     def is_overlap_warning_shown(self) -> bool:
-        """
-        True nếu trang hiện banner 'Overlapping Leave Request(s) Found' - nghĩa là
-        ngày vừa apply trùng với 1 leave request khác đã tồn tại từ trước (thường
-        do leftover data từ lần chạy test trước chưa được dọn dẹp, KHÔNG phải lỗi
-        thật của lần chạy hiện tại).
-        """
+        """Return whether the selected date overlaps an existing request."""
         return self.is_element_visible(
             self.overlap_warning_header,
             timeout=ConfigReader.get_timeout("short"),
@@ -179,16 +170,7 @@ class ApplyLeavePage(BasePage):
     def apply_leave_avoiding_overlap(
         self, leave_type: str, date_generator, comment: str = None, max_attempts: int = 5
     ):
-        """
-        date_generator: callable() -> (from_date, to_date) theo format ISO
-        'YYYY-MM-DD' (VD: TestData.generate_future_leave_dates). Mỗi lần thử
-        gọi lại date_generator để lấy 1 cặp ngày MỚI.
-
-        Tự động thử lại (tối đa max_attempts lần) nếu OrangeHRM báo
-        'Overlapping Leave Request' - tránh flaky do dữ liệu leftover từ các
-        lần chạy test trước còn tồn đọng (không có cơ chế dọn dẹp trên demo
-        site public). Trả về (from_date, to_date) đã áp dụng thành công.
-        """
+        """Apply leave with new generated dates when an existing request overlaps."""
         last_dates = None
         for _ in range(max_attempts):
             from_date, to_date = date_generator()
@@ -217,8 +199,8 @@ class ApplyLeavePage(BasePage):
             return from_date, to_date
 
         raise AssertionError(
-            f"Vẫn bị 'Overlapping Leave Request' sau {max_attempts} lần thử với "
-            f"ngày khác nhau. Ngày cuối cùng đã thử: {last_dates}"
+            f"'Overlapping Leave Request' persisted after {max_attempts} attempts "
+            f"with different dates. Last attempted dates: {last_dates}"
         )
 
     def is_success_toast_visible(self):
@@ -269,7 +251,7 @@ class ApplyLeavePage(BasePage):
         return result
 
     def has_no_leave_balance(self):
-        """True nếu form Apply Leave báo không có leave type nào còn balance."""
+        """Return whether Apply Leave reports no leave type with available balance."""
         return self.is_element_visible(
             self.no_leave_balance_message,
             timeout=ConfigReader.get_timeout("medium"),
@@ -277,8 +259,8 @@ class ApplyLeavePage(BasePage):
 
     def has_leave_type_option(self, leave_type: str) -> bool:
         """
-        Chỉ trả lời: 'CAN - Personal' có tồn tại trong dropdown Leave Type không.
-        Không liên quan gì đến số ngày balance còn lại.
+        Only check whether the leave type exists in the Leave Type dropdown.
+        This does not check the remaining balance.
         """
         self.click(self.leave_type_dropdown)
         try:
@@ -286,5 +268,5 @@ class ApplyLeavePage(BasePage):
             expected = self._normalize_text(leave_type)
             found = any(self._normalize_text(opt.text) == expected for opt in options)
         finally:
-            self.click(self.apply_leave_header)  # đóng dropdown, click ra ngoài
+            self.click(self.apply_leave_header)  # Close the dropdown by clicking outside.
         return found

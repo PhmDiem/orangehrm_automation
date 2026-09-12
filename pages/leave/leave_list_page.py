@@ -107,11 +107,10 @@ class LeaveListPage(BasePage):
 
     def find_row_by_marker(self, marker: str):
         """
-        Tìm đúng dòng chứa marker duy nhất (từ ô Comments) trong Leave List,
-        tránh giả định 'dòng đầu tiên là dòng cần thao tác' - vì có thể có
-        nhiều leave request Pending khác (leftover từ các lần chạy trước)
-        cùng tồn tại trong danh sách.
-        Trả về WebElement của dòng đó, hoặc None nếu không tìm thấy.
+        Find the row containing the unique marker from the Comments field.
+        Do not assume the first row is the target because multiple pending
+        requests from previous runs may coexist in the list.
+        Return the row WebElement, or None when no matching row is found.
         """
         rows = self.find_elements(self.table_rows)
         for row in rows:
@@ -121,17 +120,17 @@ class LeaveListPage(BasePage):
 
     def approve_leave_by_marker(self, marker: str):
         row = self.find_row_by_marker(marker)
-        assert row is not None, f"Không tìm thấy leave request với marker '{marker}' trong Leave List"
+        assert row is not None, f"Could not find leave request with marker '{marker}' in Leave List"
         row.find_element(*self.approve_btn_relative).click()
         self.wait_for_loading_to_disappear()
 
     def reject_leave_by_marker(self, marker: str):
         row = self.find_row_by_marker(marker)
-        assert row is not None, f"Không tìm thấy leave request với marker '{marker}' trong Leave List"
+        assert row is not None, f"Could not find leave request with marker '{marker}' in Leave List"
         row.find_element(*self.reject_btn_relative).click()
         self.wait_for_loading_to_disappear()
 
     def get_status_by_marker(self, marker: str) -> str:
         row = self.find_row_by_marker(marker)
-        assert row is not None, f"Không tìm thấy leave request với marker '{marker}' trong Leave List"
+        assert row is not None, f"Could not find leave request with marker '{marker}' in Leave List"
         return row.text

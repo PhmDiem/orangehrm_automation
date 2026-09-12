@@ -5,9 +5,9 @@
     "timeout": {
         "implicit_wait": 10,
         "explicit_wait": 30,
-        "short": 2,
-        "medium": 3,
-        "feedback": 5,
+        "short": 3,
+        "medium": 5,
+        "feedback": 10,
         "page_load": 15
     },
     "test_data": {

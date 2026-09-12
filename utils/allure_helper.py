@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def attach_failure_screenshot(driver, test_name):
+    # --- Screenshot capture and Allure attachment ---
     try:
         screenshot_dir = "screenshots"
         os.makedirs(screenshot_dir, exist_ok=True)

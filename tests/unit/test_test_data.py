@@ -1,6 +1,11 @@
 from datetime import datetime
 
+import pytest
+
 from utils.test_data import TestData
+
+
+pytestmark = pytest.mark.regression
 
 
 def test_future_leave_dates_are_future_and_have_expected_duration():

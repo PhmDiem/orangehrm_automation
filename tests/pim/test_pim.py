@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.pim
+@pytest.mark.regression
 class TestEmployeeManagement:
+
+    # --- Fixtures and setup ---
 
     @pytest.fixture(autouse=True)
     def setup(self, driver, login, request):
@@ -25,6 +28,7 @@ class TestEmployeeManagement:
         request.addfinalizer(self._cleanup_created_employees)
 
     def _cleanup_created_employees(self):
+        cleanup_errors = []
         for first_name, last_name in self._created_employees:
             try:
                 self._navigate_to_pim()
@@ -35,12 +39,18 @@ class TestEmployeeManagement:
                 self.pim_page.confirm_delete()
                 self.pim_page.wait_for_loading_to_disappear()
             except Exception as error:
-                logger.warning(
-                    "Could not clean up employee '%s %s': %s",
-                    first_name,
-                    last_name,
-                    error,
-                )
+                cleanup_errors.append((first_name, last_name, error))
+
+        if cleanup_errors:
+            names = ", ".join(
+                f"{first_name} {last_name}"
+                for first_name, last_name, _ in cleanup_errors
+            )
+            raise AssertionError(
+                f"Failed to clean up test employees: {names}"
+            ) from cleanup_errors[0][2]
+
+    # --- Test helpers ---
 
     def _navigate_to_pim(self):
         self.dashboard_page.navigate_to_pim_page()
@@ -110,10 +120,10 @@ class TestEmployeeManagement:
         with allure.step("Verify created employee data is correct"):
             self._assert_employee_name(first_name, last_name)
 
-        with allure.step("Verify Employee ID was auto-generated before save"):
+        with allure.step("Verify a unique Employee ID was generated for the new employee"):
             assert (
                 emp_id and emp_id.strip() != ""
-            ), "Employee ID was not auto-generated"
+            ), "Employee ID was not generated"
 
     @pytest.mark.without_name
     @pytest.mark.parametrize("missing_field", ["first_name", "last_name"])
@@ -257,9 +267,10 @@ class TestEmployeeManagement:
 
         with allure.step("Update gender, DOB, and blood type"):
             dob = update_data["dob"]
+            blood_type_updated = self.employee_page.is_blood_type_available()
             self.employee_page.select_gender(update_data["gender"])
             self.employee_page.enter_dob(dob)
-            if self.employee_page.is_blood_type_available():
+            if blood_type_updated:
                 self.employee_page.select_blood_type(update_data["bloodType"])
             self.employee_page.click_save()
 
@@ -272,6 +283,15 @@ class TestEmployeeManagement:
             assert (
                 self.employee_page.wait_for_dob_value(dob) == dob
             ), "DOB was not updated correctly"
+
+        with allure.step("Verify Gender and Blood Type were saved correctly"):
+            assert self.employee_page.is_gender_selected(update_data["gender"]), (
+                "Gender was not updated correctly"
+            )
+            if blood_type_updated:
+                assert self.employee_page.get_blood_type_value() == update_data["bloodType"], (
+                    "Blood Type was not updated correctly"
+                )
 
     @pytest.mark.delete_employee
     @allure.title("Delete an employee")

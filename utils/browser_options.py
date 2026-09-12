@@ -6,6 +6,7 @@ from utils.config_reader import ConfigReader
 
 
 def build_chrome_options():
+    # --- Browser profile and startup options ---
     options = webdriver.ChromeOptions()
     profile = TemporaryDirectory(prefix="orangehrm_")
 
@@ -42,6 +43,8 @@ def build_chrome_options():
             "useAutomationExtension": False,
         },
     )
+
+    # --- Headless mode ---
 
     if ConfigReader.is_headless():
         options.add_argument("--headless=new")

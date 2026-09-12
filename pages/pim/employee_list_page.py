@@ -9,6 +9,7 @@ class PIMPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Page and table locators ---
         self.employee_information = (
             By.XPATH,
             '//h5[text()="Employee Information"]',
@@ -63,6 +64,8 @@ class PIMPage(BasePage):
             '(//div[@class="oxd-table-card"]//i[contains(@class,"bi-trash")])[1]',
         )
 
+    # --- Page state ---
+
     def is_employee_information_displayed(self):
         return super().is_displayed(self.employee_information)
 
@@ -74,6 +77,8 @@ class PIMPage(BasePage):
 
     def navigate_to_add_employee(self):
         self.click(self.add_btn)
+
+    # --- Search actions and verification ---
 
     def search_by_employee_name(self, name):
         self.send_keys(self.search_employee_name_input, name)
@@ -147,6 +152,8 @@ class PIMPage(BasePage):
 
     def click_first_employee_row(self):
         self.click(self.employee_name_link)
+
+    # --- Delete actions ---
 
     def delete_first_employee_row(self):
         self.click(self.delete_row_btn)

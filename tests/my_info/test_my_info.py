@@ -12,7 +12,11 @@ from utils.test_data import TestData
 logger = logging.getLogger(__name__)
 
 @pytest.mark.my_info
+@pytest.mark.regression
 class TestMyInfo:
+
+    # --- Fixtures and setup ---
+
     @pytest.fixture(autouse=True)
     def setup(self, driver, login, request):
         self._created_emergency_contacts = []
@@ -28,6 +32,8 @@ class TestMyInfo:
         self._contact_snapshot = self._capture_contact_details()
         self.personal_details_page.open_personal_details()
         request.addfinalizer(self._restore_my_info)
+
+    # --- Snapshot and cleanup helpers ---
 
     def _capture_personal_details(self):
         nickname = None
@@ -69,125 +75,173 @@ class TestMyInfo:
         if not self._my_info_changed:
             return
 
+        cleanup_errors = []
+
         try:
-            self.dashboard_page.navigate_to_my_info_page()
-            self.personal_details_page.open_personal_details()
-            if self._personal_snapshot["nickname"] is not None:
-                self.personal_details_page.enter_nickname_if_available(
-                    self._personal_snapshot["nickname"]
-                )
-            if self._personal_snapshot["gender"]:
-                self.personal_details_page.select_gender(
-                    self._personal_snapshot["gender"]
-                )
-            if self._personal_snapshot["blood_type"]:
-                self.personal_details_page.select_blood_type_if_available(
-                    self._personal_snapshot["blood_type"]
-                )
-            self.personal_details_page.save()
-            self.personal_details_page.is_saved()
-
-            self.contact_details_page.open_contact_details()
-            self.contact_details_page.enter_street_1(
-                self._contact_snapshot["street_1"]
-            )
-            self.contact_details_page.enter_city(self._contact_snapshot["city"])
-            self.contact_details_page.enter_mobile(self._contact_snapshot["mobile"])
-            self.contact_details_page.save()
-            self.contact_details_page.is_saved()
-
-            self.emergency_contacts_page.open_emergency_contacts()
-            for name in self._created_emergency_contacts:
-                if any(name in row for row in self.emergency_contacts_page.get_emergency_rows_text()):
-                    self.emergency_contacts_page.delete_emergency_contact(name)
+            self._restore_personal_details()
         except Exception as error:
-            logger.warning("Could not restore My Info test data: %s", error)
+            cleanup_errors.append(("Personal Details", error))
+            logger.warning("Could not restore Personal Details: %s", error)
 
-    @allure.title("TC01 - Xem thông tin cá nhân")
+        try:
+            self._restore_contact_details()
+        except Exception as error:
+            cleanup_errors.append(("Contact Details", error))
+            logger.warning("Could not restore Contact Details: %s", error)
+
+        try:
+            self._remove_created_emergency_contacts()
+        except Exception as error:
+            cleanup_errors.append(("Emergency Contacts", error))
+            logger.warning("Could not clean up Emergency Contacts: %s", error)
+
+        if cleanup_errors:
+            sections = ", ".join(section for section, _ in cleanup_errors)
+            logger.warning(
+                "My Info cleanup finished with errors in: %s",
+                sections,
+            )
+
+    def _restore_personal_details(self):
+        self.dashboard_page.navigate_to_my_info_page()
+        self.personal_details_page.open_personal_details()
+        if self._personal_snapshot["nickname"] is not None:
+            self.personal_details_page.enter_nickname_if_available(
+                self._personal_snapshot["nickname"]
+            )
+        if self._personal_snapshot["gender"]:
+            self.personal_details_page.select_gender(
+                self._personal_snapshot["gender"]
+            )
+        if self._personal_snapshot["blood_type"]:
+            self.personal_details_page.select_blood_type_if_available(
+                self._personal_snapshot["blood_type"]
+            )
+        self.personal_details_page.save()
+
+    def _restore_contact_details(self):
+        self.dashboard_page.navigate_to_my_info_page()
+        self.contact_details_page.open_contact_details()
+        self.contact_details_page.enter_street_1(
+            self._contact_snapshot["street_1"]
+        )
+        self.contact_details_page.enter_city(self._contact_snapshot["city"])
+        self.contact_details_page.enter_mobile(self._contact_snapshot["mobile"])
+        self.contact_details_page.save()
+
+    def _remove_created_emergency_contacts(self):
+        if not self._created_emergency_contacts:
+            return
+
+        self.dashboard_page.navigate_to_my_info_page()
+        self.emergency_contacts_page.open_emergency_contacts()
+        existing_rows = self.emergency_contacts_page.get_emergency_rows_text()
+        for name in self._created_emergency_contacts:
+            if any(name in row for row in existing_rows):
+                self.emergency_contacts_page.delete_emergency_contact(name)
+
+    # --- Personal details tests ---
+
+    @pytest.mark.view_personal_info
+    @allure.title("TC01 - View personal information")
     def test_view_personal_information(self):
-        with allure.step("Mở tab Personal Details"):
+        with allure.step("Open the Personal Details tab"):
             assert self.personal_details_page.open(), "Personal Details heading is not displayed"
 
-        with allure.step("Verify các trường thông tin cơ bản hiển thị"):
+        with allure.step("Verify that the basic information fields are displayed"):
             assert self.personal_details_page.is_displayed(self.personal_details_page.first_name), \
                 "First Name field is not displayed"
             assert self.personal_details_page.is_gender_control_visible(), \
                 "Gender radio buttons are not displayed"
 
-    @allure.title("TC02 - Cập nhật Personal Details (nickname, gender, blood type)")
+    @pytest.mark.update_personal_info
+    @allure.title("TC02 - Update Personal Details (nickname, gender, blood type)")
     def test_update_personal_details(self):
         self._my_info_changed = True
         nickname = TestData.generate_employee_name("Nick")
         personal_data = ConfigReader.get_my_info_data("personal_details")
 
-        with allure.step("Mở tab Personal Details"):
+        with allure.step("Open the Personal Details tab"):
             self.personal_details_page.open_personal_details()
 
-        with allure.step(f"Nhập nickname '{nickname}' (nếu field tồn tại)"):
+        with allure.step(f"Enter nickname '{nickname}' if the field exists"):
             nickname_entered = self.personal_details_page.enter_nickname_if_available(nickname)
 
-        with allure.step(f"Chọn Gender = {personal_data['gender']}"):
+        with allure.step(f"Select Gender = {personal_data['gender']}"):
             self.personal_details_page.select_gender(personal_data["gender"])
 
-        with allure.step(f"Chọn Blood Type = {personal_data['blood_type']} (nếu field tồn tại)"):
-            self.personal_details_page.select_blood_type_if_available(
+        with allure.step(f"Select Blood Type = {personal_data['blood_type']} if the field exists"):
+            blood_type_entered = self.personal_details_page.select_blood_type_if_available(
                 personal_data["blood_type"]
             )
 
-        with allure.step("Bấm Save"):
+        with allure.step("Click Save"):
             self.personal_details_page.save()
 
-        with allure.step("Verify lưu thành công"):
-            assert self.personal_details_page.is_saved(), "Personal Details save was not confirmed"
-
-        with allure.step("Verify Gender đã được chọn đúng"):
+        with allure.step("Verify that the updated values persisted"):
             assert self.personal_details_page.is_gender_selected(personal_data["gender"]), \
                 f"Gender was not updated to {personal_data['gender']}"
 
         if nickname_entered:
-            with allure.step("Verify Nickname được lưu đúng giá trị"):
+            with allure.step("Verify that Nickname was saved with the expected value"):
                 assert self.personal_details_page.get_nickname_value() == nickname, \
                     "Nickname value does not match input"
 
-    @allure.title("TC03 - Cập nhật Contact Details (địa chỉ, số điện thoại)")
+        if blood_type_entered:
+            with allure.step("Verify Blood Type was saved with the expected value"):
+                assert (
+                    self.personal_details_page.get_blood_type_value()
+                    == personal_data["blood_type"]
+                ), "Blood Type value does not match input"
+
+    # --- Contact and emergency contact tests ---
+
+    @pytest.mark.update_contact_info
+    @allure.title("TC03 - Update Contact Details (address, phone number)")
     def test_update_contact_details(self):
         self._my_info_changed = True
         contact_data = ConfigReader.get_my_info_data("contact")
 
-        with allure.step("Mở tab Contact Details"):
+        with allure.step("Open the Contact Details tab"):
             self.contact_details_page.open_contact_details()
 
-        with allure.step("Nhập địa chỉ (Street 1, City)"):
+        with allure.step("Enter the address (Street 1, City)"):
             self.contact_details_page.enter_street_1(contact_data["street_1"])
             self.contact_details_page.enter_city(contact_data["city"])
 
-        with allure.step("Nhập số điện thoại (Mobile)"):
+        with allure.step("Enter the phone number (Mobile)"):
             self.contact_details_page.enter_mobile(contact_data["mobile"])
 
-        with allure.step("Bấm Save"):
+        with allure.step("Click Save"):
             self.contact_details_page.save()
 
-        with allure.step("Verify lưu thành công"):
-            assert self.contact_details_page.is_saved(), "Contact Details save was not confirmed"
-
-        with allure.step("Verify số điện thoại được lưu đúng giá trị"):
+        with allure.step("Verify that the updated values persisted"):
             assert self.contact_details_page.get_mobile_value() == contact_data["mobile"], \
                 "Mobile value does not match input after save"
 
-    @allure.title("TC04 - Thêm Emergency Contact")
+        with allure.step("Verify that the address was saved correctly"):
+            assert self.contact_details_page.get_field_value(
+                self.contact_details_page.street_1
+            ) == contact_data["street_1"], "Street 1 value does not match input"
+            assert self.contact_details_page.get_field_value(
+                self.contact_details_page.city
+            ) == contact_data["city"], "City value does not match input"
+
+    @pytest.mark.add_emergency_contact
+    @allure.title("TC04 - Add an Emergency Contact")
     def test_add_emergency_contact(self):
         self._my_info_changed = True
         name = TestData.generate_employee_name("Emergency")
         emergency_data = ConfigReader.get_my_info_data("emergency_contact")
 
-        with allure.step("Mở tab Emergency Contacts"):
+        with allure.step("Open the Emergency Contacts tab"):
             self.emergency_contacts_page.open_emergency_contacts()
 
-        with allure.step("Bấm Add để mở form thêm mới"):
+        with allure.step("Click Add to open the creation form"):
             assert self.emergency_contacts_page.add_emergency_contact(), \
                 "Save Emergency Contact form is not displayed"
 
-        with allure.step(f"Nhập thông tin liên hệ khẩn cấp: {name}"):
+        with allure.step(f"Enter emergency contact details: {name}"):
             self._created_emergency_contacts.append(name)
             self.emergency_contacts_page.enter_emergency_contact(
                 name,
@@ -195,51 +249,50 @@ class TestMyInfo:
                 emergency_data["mobile"],
             )
 
-        with allure.step("Bấm Save"):
+        with allure.step("Click Save"):
             self.emergency_contacts_page.save()
 
-        with allure.step("Verify lưu thành công"):
-            assert self.emergency_contacts_page.is_saved(), "Emergency Contact save was not confirmed"
-
-        with allure.step("Verify contact mới xuất hiện trong danh sách"):
+        with allure.step("Verify that the new contact was persisted in the list"):
             assert self.emergency_contacts_page.wait_for_emergency_contact(name), \
                 f"New emergency contact '{name}' not found in list"
 
-    @allure.title("TC05 - Cập nhật thiếu field bắt buộc → hiện lỗi")
+    @pytest.mark.emergency_contact_required
+    @allure.title("TC05 - Submit a missing required field and show an error")
     def test_emergency_contact_required_field(self):
-        with allure.step("Mở tab Emergency Contacts"):
+        with allure.step("Open the Emergency Contacts tab"):
             self.emergency_contacts_page.open_emergency_contacts()
 
-        with allure.step("Bấm Add nhưng không nhập gì"):
+        with allure.step("Click Add without entering any data"):
             self.emergency_contacts_page.add_emergency_contact()
 
-        with allure.step("Bấm Save"):
+        with allure.step("Click Save"):
             self.emergency_contacts_page.save()
 
-        with allure.step("Verify hiện lỗi Required"):
+        with allure.step("Verify that the Required error is displayed"):
             assert self.emergency_contacts_page.has_required_error(), \
                 "Required validation was not displayed"
 
-    @allure.title("TC06 - Nhập số điện thoại chứa chữ cái → hiện lỗi")
+    @pytest.mark.invalid_phone
+    @allure.title("TC06 - Enter letters in the phone number and show an error")
     def test_contact_details_invalid_phone_format(self):
         self._my_info_changed = True
         validation_data = ConfigReader.get_my_info_data("validation")
         invalid_mobile = validation_data["invalid_mobile"]
 
-        with allure.step("Mở tab Contact Details"):
+        with allure.step("Open the Contact Details tab"):
             self.contact_details_page.open_contact_details()
 
-        with allure.step(f"Nhập số điện thoại không hợp lệ: '{invalid_mobile}'"):
+        with allure.step(f"Enter an invalid phone number: '{invalid_mobile}'"):
             self.contact_details_page.enter_mobile(invalid_mobile)
 
-        with allure.step("Bấm Save"):
+        with allure.step("Click Save"):
             self.contact_details_page.save()
 
-        with allure.step("Verify hiện lỗi validate số điện thoại"):
+        with allure.step("Verify that the phone validation error is displayed"):
             assert "allows numbers" in self.contact_details_page.get_mobile_error_text().casefold(), \
                 "Mobile validation error was not displayed"
 
-        with allure.step("Verify không có toast lưu thành công"):
+        with allure.step("Verify that no successful save toast is displayed"):
             assert not self.contact_details_page.is_element_visible(
                 self.contact_details_page.success_toast,
                 timeout=ConfigReader.get_timeout("short"),

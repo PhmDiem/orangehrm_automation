@@ -7,10 +7,12 @@ class LeaveTypesPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Locators ---
         self.leave_types = (By.XPATH, '//h6[text()="Leave Types"]')
         self.leave_type_list = (By.CSS_SELECTOR, ".oxd-table")
         self.leave_type_rows = (By.CSS_SELECTOR, ".oxd-table .oxd-table-card")
 
+    # --- Verification ---
 
     def is_leave_types_page_displayed(self):
         return super().is_displayed(self.leave_types)

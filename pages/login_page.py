@@ -8,6 +8,7 @@ class LoginPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
 
+        # --- Locators ---
         self.login_title = (
             By.XPATH,
             '//h5[@class="oxd-text oxd-text--h5 orangehrm-login-title"]',
@@ -28,7 +29,9 @@ class LoginPage(BasePage):
             By.XPATH,
             '//span[@class="oxd-userdropdown-tab"]',
         )
-        self.logout_btn = (By.XPATH, '//a[text()="Logout"]')
+        self.logout_btn = (By.XPATH, '//a[contains(@href, "/auth/logout")]')
+
+    # --- Actions ---
 
     def login(self, username, password):
         self.send_keys(self.username_field, username)
@@ -45,6 +48,8 @@ class LoginPage(BasePage):
                 f"Login failed for '{username}': {self.get_error_message()}"
             )
         self.wait.until(lambda d: d.find_element(*dashboard_locator).is_displayed())
+
+    # --- Verification ---
 
     def is_login_displayed(self):
         return self.is_displayed(self.login_title)

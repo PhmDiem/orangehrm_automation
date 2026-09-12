@@ -69,14 +69,14 @@ class CreateEmployee(BasePage):
             self.enter_first_name(first_name)
             self.enter_last_name(last_name)
 
-            # Generate ID MỚI mỗi attempt
+            # Generate a new ID for each attempt.
             employee_id = TestData.generate_employee_id()
 
             logger.debug("Generated employee ID: %s", employee_id)
 
             self.enter_employee_id(employee_id)
 
-            # Verify ID thực sự được nhập vào input
+            # Verify that the ID was entered into the input.
             actual_id = self.get_employee_id()
 
             logger.debug("Actual employee ID in input: %s", actual_id)
@@ -107,7 +107,7 @@ class CreateEmployee(BasePage):
                     f"after {max_retries} attempts"
                 )
 
-            # Save thành công
+            # Save completed successfully.
             logger.info("Employee %s created successfully", employee_id)
 
             WebDriverWait(
