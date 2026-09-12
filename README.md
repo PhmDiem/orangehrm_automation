@@ -68,6 +68,20 @@ You can also serve the raw results manually:
 allure serve allure-results
 ```
 
+## Continuous Integration
+
+GitHub Actions runs the test suite with the following strategy:
+
+- **Unit tests** run on every push and pull request.
+- **Smoke tests** run on every push and pull request to validate the critical
+  login and logout flows quickly.
+- **Full regression tests** run only when the workflow is started manually
+  from the **Actions** tab using **Run workflow**. This keeps routine CI runs
+  fast while still allowing the complete UI suite to be run before a demo or
+  release.
+
+Allure raw results are uploaded as a workflow artifact after each run.
+
 ## Configuration
 
 Default settings are stored in `config/config.json` and can be overridden with
